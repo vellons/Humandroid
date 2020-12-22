@@ -1,0 +1,135 @@
+import math
+
+import cv2
+import mediapipe as mp
+from mediapipe.python.solutions.pose import PoseLandmark
+from mediapipe.python.solutions.drawing_utils import DrawingSpec
+from mediapipe.python.solutions.drawing_utils import PRESENCE_THRESHOLD
+from mediapipe.python.solutions.drawing_utils import VISIBILITY_THRESHOLD
+import numpy as np
+
+ANGLES = [
+    (PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW, PoseLandmark.LEFT_WRIST),  # gomito sx
+    (PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW, PoseLandmark.RIGHT_WRIST),  # gomito dx
+    (PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW),  # spalla sx
+    (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW)  # spalla dx
+]
+
+
+class Humandroid:
+    """
+    Human pose detection to control humandroid robots.
+    Works with MediaPipe technology
+
+    Please refer to https://mediapipe.dev/ for more info.
+    """
+
+    _mp_solution_pose = mp.solutions.pose
+    _mp_solution_drawing = mp.solutions.drawing_utils
+    _mp_pose = None
+
+    detected_pose = None
+
+    def __init__(self, static_image_mode=False, upper_body_only=False):
+        """
+        Initializes Humandroid object and MediaPipe.
+
+        Args:
+          static_image_mode: Whether to treat the input images as a batch of static
+            and possibly unrelated images, or a video stream. See details in
+            https://solutions.mediapipe.dev/pose#static_image_mode.
+          upper_body_only: Whether to track the full set of 33 pose landmarks or
+            only the 25 upper-body pose landmarks. See details in
+            https://solutions.mediapipe.dev/pose#upper_body_only.
+        """
+
+        print("Humandroid initialization")
+        self._mp_pose = self._mp_solution_pose.Pose(
+            static_image_mode=static_image_mode,
+            upper_body_only=upper_body_only,
+            smooth_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
+
+    def process_pose_landmark(self, image: np.ndarray):
+        """
+        Processes an RGB image and returns the pose landmarks on the most prominent person detected.
+
+        Args:
+          image: An RGB image represented as a numpy ndarray.
+
+        Returns:
+          A NamedTuple object with a "pose_landmarks" field that contains the pose
+          landmarks on the most prominent person detected.
+        """
+
+        try:
+            self.detected_pose = self._mp_pose.process(image)
+        finally:
+            return self.detected_pose
+
+    def draw_landmarks(self, image: np.ndarray):
+        """
+        Draws the landmarks and the connections on the image.
+
+        Args:
+          image: A three channel RGB image represented as numpy ndarray.
+        """
+
+        if not self.detected_pose.pose_landmarks:
+            return
+
+        self._mp_solution_drawing.draw_landmarks(
+            image,
+            self.detected_pose.pose_landmarks,
+            self._mp_solution_pose.POSE_CONNECTIONS,
+            DrawingSpec(color=(255, 0, 0)),
+            DrawingSpec(color=(0, 255, 0))
+        )
+
+    def _calc_angle_if_safe(self, points):
+        """
+       Draws focus angle on the image.
+       Note that angle can be calculated also if the center is not visible
+
+       Args:
+         points: A tuple with 3 point that will be used to calc the angle.
+       """
+        pose = self.detected_pose.pose_landmarks.landmark
+        for p in points:
+            # Check if all 3 landmarks is enough present and visible
+            if pose[p].HasField('visibility') and \
+                    pose[p].visibility < VISIBILITY_THRESHOLD or \
+                    pose[p].HasField('presence') and \
+                    pose[p].presence < PRESENCE_THRESHOLD:
+                return -1
+
+        # Calc angle
+        a = math.atan2(pose[points[0]].y - pose[points[1]].y, pose[points[0]].x - pose[points[1]].x)
+        b = math.atan2(pose[points[2]].y - pose[points[1]].y, pose[points[2]].x - pose[points[1]].x)
+        result = math.fabs(math.degrees(a - b))  # Make angle always positive
+        if result > 180:
+            result = (360.0 - result)
+        return int(result)
+
+    def draw_angles(self, image: np.ndarray):
+        """
+       Draws angle to focus on the image.
+
+       Args:
+         image: A three channel RGB image represented as numpy ndarray.
+       """
+        if not self.detected_pose.pose_landmarks:
+            return
+        image_height, image_width, _ = image.shape
+
+        for angle in ANGLES:
+            a = self._calc_angle_if_safe(angle)
+            if a >= 0:
+                angle_x = self.detected_pose.pose_landmarks.landmark[angle[1]].x * image_width
+                angle_y = self.detected_pose.pose_landmarks.landmark[angle[1]].y * image_height
+                margin = 15
+                if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
+                    text_position = (int(angle_x) - 15, int(angle_y) + 20)
+                    cv2.putText(image, str(a), text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)

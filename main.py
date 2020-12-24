@@ -28,6 +28,7 @@ if __name__ == '__main__':
         # humandroid.process_angles(image)  # TODO: make angles independent from image
         humandroid.draw_landmarks(image)
         humandroid.draw_angles(image)
+        three_d_env = humandroid.draw_3d_environment()
 
         # Calc FPS average over multiple frame
         frame_counter += 1
@@ -41,6 +42,9 @@ if __name__ == '__main__':
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # RGB image to BGR
         cv2.putText(image, fps, (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         cv2.imshow('Humandroid pose interpreter V0.1', image)
+
+        three_d_env = cv2.cvtColor(three_d_env, cv2.COLOR_RGB2BGR)  # RGB image to BGR
+        cv2.imshow('3D environment', three_d_env)
 
         if cv2.waitKey(5) & 0xFF == 27:
             break

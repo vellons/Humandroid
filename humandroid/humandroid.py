@@ -7,6 +7,7 @@ from mediapipe.python.solutions.drawing_utils import DrawingSpec
 from mediapipe.python.solutions.drawing_utils import PRESENCE_THRESHOLD
 from mediapipe.python.solutions.drawing_utils import VISIBILITY_THRESHOLD
 import numpy as np
+import matplotlib.pyplot as plt
 
 ANGLES = [
     (PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW, PoseLandmark.LEFT_WRIST),  # gomito sx
@@ -29,6 +30,9 @@ class Humandroid:
     _mp_pose = None
 
     detected_pose = None
+
+    # Use inside draw_3d_environment()
+    _plt_fig = None
 
     def __init__(self, static_image_mode=False, upper_body_only=False):
         """
@@ -90,12 +94,13 @@ class Humandroid:
 
     def _calc_angle_if_safe(self, points):
         """
-       Draws focus angle on the image.
-       Note that angle can be calculated also if the center is not visible
+        Calc angle between three points.
+        Note that angle can be calculated also if the center is not visible
 
-       Args:
-         points: A tuple with 3 point that will be used to calc the angle.
-       """
+        Args:
+          points: A tuple with 3 point that will be used to calc the angle.
+        """
+
         pose = self.detected_pose.pose_landmarks.landmark
         for p in points:
             # Check if all 3 landmarks is enough present and visible
@@ -115,11 +120,12 @@ class Humandroid:
 
     def draw_angles(self, image: np.ndarray):
         """
-       Draws angle to focus on the image.
+        Draws angles to focus on the image.
 
-       Args:
-         image: A three channel RGB image represented as numpy ndarray.
-       """
+        Args:
+          image: A three channel RGB image represented as numpy ndarray.
+        """
+
         if not self.detected_pose.pose_landmarks:
             return
         image_height, image_width, _ = image.shape
@@ -133,3 +139,39 @@ class Humandroid:
                 if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
                     text_position = (int(angle_x) - 15, int(angle_y) + 20)
                     cv2.putText(image, str(a), text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+
+    def draw_3d_environment(self):
+        if self._plt_fig is None:
+            # Initialize at first execution
+            self._plt_fig = plt.figure()
+
+        self._plt_fig.clf()  # Clear figure and configure plot
+        ax = plt.axes(projection="3d")
+        ax.set_xlim([2, -1])
+        ax.set_ylim([2.5, -0.5])
+        ax.set_zlim([-3, 3])
+        ax.view_init(270, 90)
+        ax.axes.get_xaxis().set_ticklabels([])
+        ax.axes.get_yaxis().set_ticklabels([])
+        ax.axes.get_zaxis().set_ticklabels([])
+
+        if self.detected_pose.pose_landmarks:
+            pose = self.detected_pose.pose_landmarks.landmark
+            num_landmarks = len(pose)
+            # Draws the connections
+            for connection in self._mp_solution_pose.POSE_CONNECTIONS:
+                start = connection[0]
+                end = connection[1]
+
+                if not (0 <= start < num_landmarks and 0 <= end < num_landmarks):
+                    continue
+
+                ax.plot([pose[start].x, pose[end].x], [pose[start].y, pose[end].y], [pose[start].z, pose[end].z])
+
+        # Draw the renderer
+        self._plt_fig.canvas.draw()
+
+        # Plot canvas to a three channel RGB image represented as numpy ndarray
+        image = np.fromstring(self._plt_fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+        image = image.reshape(self._plt_fig.canvas.get_width_height()[::-1] + (3,))
+        return image

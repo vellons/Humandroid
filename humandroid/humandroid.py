@@ -1,5 +1,4 @@
 import math
-
 import cv2
 import mediapipe as mp
 from mediapipe.python.solutions.pose import PoseLandmark
@@ -174,4 +173,5 @@ class Humandroid:
         # Plot canvas to a three channel RGB image represented as numpy ndarray
         image = np.fromstring(self._plt_fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
         image = image.reshape(self._plt_fig.canvas.get_width_height()[::-1] + (3,))
+        image = image[70:400, 150:500]
         return image

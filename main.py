@@ -25,9 +25,9 @@ if __name__ == '__main__':
 
         # Humandroid
         humandroid.process_pose_landmark(image)
-        # humandroid.process_angles(image)  # TODO: make angles independent from image
         humandroid.draw_landmarks(image)
-        humandroid.draw_angles(image)
+        # humandroid.process_angles(image)  # TODO: make angles independent from image
+        humandroid.draw_angles(image)  # TODO: draw angles precedent calculated
         three_d_env = humandroid.draw_3d_environment()
 
         # Calc FPS average over multiple frame

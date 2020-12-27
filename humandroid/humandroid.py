@@ -15,6 +15,11 @@ ANGLES = [
     (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW)  # spalla dx
 ]
 
+Z_ANGLES = [
+    (PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW),  # spalla sx
+    (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW)  # spalla dx
+]
+
 
 class Humandroid:
     """
@@ -23,6 +28,9 @@ class Humandroid:
 
     Please refer to https://mediapipe.dev/ for more info.
     """
+
+    _calc_z = False
+    _upper_body_only = False
 
     _mp_solution_pose = mp.solutions.pose
     _mp_solution_drawing = mp.solutions.drawing_utils
@@ -33,7 +41,7 @@ class Humandroid:
     # Use inside draw_3d_environment()
     _plt_fig = None
 
-    def __init__(self, static_image_mode=False, upper_body_only=False):
+    def __init__(self, static_image_mode=False, upper_body_only=False, calc_z=False):
         """
         Initializes Humandroid object and MediaPipe.
 
@@ -47,6 +55,9 @@ class Humandroid:
         """
 
         print("Humandroid initialization")
+        self._calc_z = calc_z
+        self._upper_body_only = upper_body_only
+
         self._mp_pose = self._mp_solution_pose.Pose(
             static_image_mode=static_image_mode,
             upper_body_only=upper_body_only,
@@ -74,7 +85,7 @@ class Humandroid:
 
     def draw_landmarks(self, image: np.ndarray):
         """
-        Draws the landmarks and the connections on the image.
+        Draws the landmarks and the connections on the passed image.
 
         Args:
           image: A three channel RGB image represented as numpy ndarray.
@@ -86,7 +97,7 @@ class Humandroid:
         self._mp_solution_drawing.draw_landmarks(
             image,
             self.detected_pose.pose_landmarks,
-            self._mp_solution_pose.POSE_CONNECTIONS,
+            self._mp_solution_pose.POSE_CONNECTIONS,  # UPPER_BODY_POSE_CONNECTIONS: available next release MediaPipe
             DrawingSpec(color=(255, 0, 0)),
             DrawingSpec(color=(0, 255, 0))
         )
@@ -94,10 +105,13 @@ class Humandroid:
     def _calc_angle_if_safe(self, points):
         """
         Calc angle between three points.
-        Note that angle can be calculated also if the center is not visible
+        Note that angle can be calculated also if the center is not visible.
 
         Args:
           points: A tuple with 3 point that will be used to calc the angle.
+
+        Returns:
+          The calculated angle or -1 if is not possible to calc.
         """
 
         pose = self.detected_pose.pose_landmarks.landmark
@@ -117,9 +131,39 @@ class Humandroid:
             result = (360.0 - result)
         return int(result)
 
+    def _calc_z_angle_if_safe(self, points):
+        """
+        Calc Z angle between three points.
+        MediaPipe Z is experimental and not currently stable.
+        Note that angle can be calculated also if the center is not visible.
+
+        Args:
+          points: A tuple with 3 point that will be used to calc the angle.
+
+        Returns:
+          The calculated angle or -1 if is not possible to calc.
+        """
+
+        pose = self.detected_pose.pose_landmarks.landmark
+        for p in points:
+            # Check if all 3 landmarks is enough present and visible
+            if pose[p].HasField('visibility') and \
+                    pose[p].visibility < VISIBILITY_THRESHOLD or \
+                    pose[p].HasField('presence') and \
+                    pose[p].presence < PRESENCE_THRESHOLD:
+                return -1
+
+        # Calc z angle
+        a = math.atan2(pose[points[0]].y - pose[points[1]].y, pose[points[0]].z - pose[points[1]].z)
+        b = math.atan2(pose[points[2]].y - pose[points[1]].y, pose[points[2]].z - pose[points[1]].z)
+        result = math.fabs(math.degrees(a - b))  # Make angle always positive
+        if result > 180:
+            result = (360.0 - result)
+        return int(result)
+
     def draw_angles(self, image: np.ndarray):
         """
-        Draws angles to focus on the image.
+        Draws angles to focus on the passed image.
 
         Args:
           image: A three channel RGB image represented as numpy ndarray.
@@ -128,6 +172,7 @@ class Humandroid:
         if not self.detected_pose.pose_landmarks:
             return
         image_height, image_width, _ = image.shape
+        font_scale = 0.6
 
         for angle in ANGLES:
             a = self._calc_angle_if_safe(angle)
@@ -137,9 +182,30 @@ class Humandroid:
                 margin = 15
                 if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
                     text_position = (int(angle_x) - 15, int(angle_y) + 20)
-                    cv2.putText(image, str(a), text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                    cv2.putText(image, str(a), text_position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 0, 0), 2)
+
+        if self._calc_z is False:
+            return
+
+        for angle in Z_ANGLES:
+            a = self._calc_z_angle_if_safe(angle)
+            if a >= 0:
+                angle_x = self.detected_pose.pose_landmarks.landmark[angle[1]].x * image_width
+                angle_y = self.detected_pose.pose_landmarks.landmark[angle[1]].y * image_height
+                margin = 15
+                if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
+                    text_position = (int(angle_x) + 15, int(angle_y) + 20)
+                    cv2.putText(image, str(a), text_position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), 2)
 
     def draw_3d_environment(self):
+        """
+        Draws the landmarks and the connections wit matplotlib.
+
+        Returns:
+          A three channel RGB image represented as numpy ndarray with the body in a
+          simulated environment made with matplotlib.
+        """
+
         if self._plt_fig is None:
             # Initialize at first execution
             self._plt_fig = plt.figure()

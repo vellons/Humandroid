@@ -1,23 +1,30 @@
-import math
 import cv2
+import math
+import matplotlib.pyplot as plt
 import mediapipe as mp
 from mediapipe.python.solutions.pose import PoseLandmark
 from mediapipe.python.solutions.drawing_utils import DrawingSpec
-from mediapipe.python.solutions.drawing_utils import PRESENCE_THRESHOLD
 from mediapipe.python.solutions.drawing_utils import VISIBILITY_THRESHOLD
 import numpy as np
-import matplotlib.pyplot as plt
+
+from humandroid.body_landmark import HumandroidBodyLandmark
 
 ANGLES = [
     (PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW, PoseLandmark.LEFT_WRIST),  # gomito sx
     (PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW, PoseLandmark.RIGHT_WRIST),  # gomito dx
     (PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW),  # spalla sx
-    (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW)  # spalla dx
+    (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW),  # spalla dx
+    (PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE),  # anca sx
+    (PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE),  # anca dx
+    (PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE, PoseLandmark.LEFT_ANKLE),  # ginocchio sx
+    (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE, PoseLandmark.RIGHT_ANKLE)  # ginocchio dx
 ]
 
 Z_ANGLES = [
     (PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW),  # spalla sx
-    (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW)  # spalla dx
+    (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW),  # spalla dx
+    (PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE, PoseLandmark.LEFT_ANKLE),  # ginocchio sx
+    (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE, PoseLandmark.RIGHT_ANKLE)  # ginocchio dx
 ]
 
 
@@ -30,16 +37,16 @@ class Humandroid:
     """
 
     _calc_z = False
-    _upper_body_only = False
+    _upper_body_only = False  # TODO: at the moment only work for all body, wait for MediaPipe next release
 
     _mp_solution_pose = mp.solutions.pose
     _mp_solution_drawing = mp.solutions.drawing_utils
-    _mp_pose = None
+    _mp_pose = None  # MediaPipe object
 
-    detected_pose = None
+    detected_pose = None  # Data directly form MediaPipe
+    computed_pose = None  # Computed data for humandroid robot with servo angles
 
-    # Use inside draw_3d_environment()
-    _plt_fig = None
+    _plt_fig = None  # Use inside draw_3d_environment()
 
     def __init__(self, static_image_mode=False, upper_body_only=False, calc_z=False):
         """
@@ -74,14 +81,38 @@ class Humandroid:
           image: An RGB image represented as a numpy ndarray.
 
         Returns:
-          A NamedTuple object with a "pose_landmarks" field that contains the pose
+          A dict object with a "pose_landmarks" field that contains the pose
           landmarks on the most prominent person detected.
         """
 
         try:
             self.detected_pose = self._mp_pose.process(image)
         finally:
-            return self.detected_pose
+            # Create internal computed_pose object
+            self.computed_pose = {
+                "pose_landmarks": []
+            }
+
+            if not self.detected_pose.pose_landmarks:  # If not pose detect return a fake position nodes
+                for idx, pose in enumerate(PoseLandmark):
+                    landmark = HumandroidBodyLandmark(identifier=idx, name=str(PoseLandmark.value2member_map_[idx]))
+                    self.computed_pose["pose_landmarks"].append(landmark)
+                return self.computed_pose
+
+            for idx, pose in enumerate(self.detected_pose.pose_landmarks.landmark):  # Copy pose info in landmark obj
+                landmark = HumandroidBodyLandmark(
+                    identifier=idx,
+                    name=str(PoseLandmark.value2member_map_[idx]),
+                    x=pose.x,
+                    y=pose.y,
+                    z=pose.z,
+                    visibility=pose.visibility,
+                    angle=None,
+                    z_angle=None
+                )
+                self.computed_pose["pose_landmarks"].append(landmark)
+
+            return self.computed_pose
 
     def draw_landmarks(self, image: np.ndarray):
         """
@@ -108,24 +139,22 @@ class Humandroid:
         Note that angle can be calculated also if the center is not visible.
 
         Args:
-          points: A tuple with 3 point that will be used to calc the angle.
+          points: A tuple with 3 point that will be used to calc the angle. points[1] is the center.
 
         Returns:
-          The calculated angle or -1 if is not possible to calc.
+          The calculated angle or None if is not possible to calc.
         """
 
-        pose = self.detected_pose.pose_landmarks.landmark
+        landmarks = self.computed_pose["pose_landmarks"]
         for p in points:
             # Check if all 3 landmarks is enough present and visible
-            if pose[p].HasField('visibility') and \
-                    pose[p].visibility < VISIBILITY_THRESHOLD or \
-                    pose[p].HasField('presence') and \
-                    pose[p].presence < PRESENCE_THRESHOLD:
-                return -1
+            # if landmarks[p].visibility < VISIBILITY_THRESHOLD or landmarks[p].presence < PRESENCE_THRESHOLD:
+            if landmarks[p].visibility < VISIBILITY_THRESHOLD:
+                return None
 
         # Calc angle
-        a = math.atan2(pose[points[0]].y - pose[points[1]].y, pose[points[0]].x - pose[points[1]].x)
-        b = math.atan2(pose[points[2]].y - pose[points[1]].y, pose[points[2]].x - pose[points[1]].x)
+        a = math.atan2(landmarks[points[0]].y - landmarks[points[1]].y, landmarks[points[0]].x - landmarks[points[1]].x)
+        b = math.atan2(landmarks[points[2]].y - landmarks[points[1]].y, landmarks[points[2]].x - landmarks[points[1]].x)
         result = math.fabs(math.degrees(a - b))  # Make angle always positive
         if result > 180:
             result = (360.0 - result)
@@ -138,68 +167,76 @@ class Humandroid:
         Note that angle can be calculated also if the center is not visible.
 
         Args:
-          points: A tuple with 3 point that will be used to calc the angle.
+          points: A tuple with 3 point that will be used to calc the angle. points[1] is the center.
 
         Returns:
-          The calculated angle or -1 if is not possible to calc.
+          The calculated angle or None if is not possible to calc.
         """
 
-        pose = self.detected_pose.pose_landmarks.landmark
+        landmarks = self.computed_pose["pose_landmarks"]
         for p in points:
             # Check if all 3 landmarks is enough present and visible
-            if pose[p].HasField('visibility') and \
-                    pose[p].visibility < VISIBILITY_THRESHOLD or \
-                    pose[p].HasField('presence') and \
-                    pose[p].presence < PRESENCE_THRESHOLD:
-                return -1
+            if landmarks[p].visibility < VISIBILITY_THRESHOLD:
+                return None
 
         # Calc z angle
-        a = math.atan2(pose[points[0]].y - pose[points[1]].y, pose[points[0]].z - pose[points[1]].z)
-        b = math.atan2(pose[points[2]].y - pose[points[1]].y, pose[points[2]].z - pose[points[1]].z)
+        a = math.atan2(landmarks[points[0]].y - landmarks[points[1]].y, landmarks[points[0]].z - landmarks[points[1]].z)
+        b = math.atan2(landmarks[points[2]].y - landmarks[points[1]].y, landmarks[points[2]].z - landmarks[points[1]].z)
         result = math.fabs(math.degrees(a - b))  # Make angle always positive
         if result > 180:
             result = (360.0 - result)
         return int(result)
 
+    def process_angles(self):
+        """
+        Calculate focus angles from the current person detected.
+
+        Returns:
+          A dict object with a "pose_landmarks" field that contains the pose
+          landmarks on the most prominent person detected and calculated angles.
+        """
+
+        for angle in ANGLES:
+            a = self._calc_angle_if_safe(angle)
+            self.computed_pose["pose_landmarks"][angle[1]].angle = a
+
+        if self._calc_z:
+            for angle in Z_ANGLES:
+                a = self._calc_z_angle_if_safe(angle)
+                self.computed_pose["pose_landmarks"][angle[1]].z_angle = a
+
+        return self.computed_pose
+
     def draw_angles(self, image: np.ndarray):
         """
-        Draws angles to focus on the passed image.
+        Draws angles processed angles on the passed image.
 
         Args:
           image: A three channel RGB image represented as numpy ndarray.
         """
 
-        if not self.detected_pose.pose_landmarks:
-            return
         image_height, image_width, _ = image.shape
-        font_scale = 0.6
+        font = 0.6
+        margin = 15
 
-        for angle in ANGLES:
-            a = self._calc_angle_if_safe(angle)
-            if a >= 0:
-                angle_x = self.detected_pose.pose_landmarks.landmark[angle[1]].x * image_width
-                angle_y = self.detected_pose.pose_landmarks.landmark[angle[1]].y * image_height
-                margin = 15
+        for landmark in self.computed_pose["pose_landmarks"]:
+            if landmark.angle is not None:  # Draw calculated angles
+                angle_x = landmark.x * image_width
+                angle_y = landmark.y * image_height
                 if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
-                    text_position = (int(angle_x) - 15, int(angle_y) + 20)
-                    cv2.putText(image, str(a), text_position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 0, 0), 2)
+                    pos = (int(angle_x) - 15, int(angle_y) + 20)
+                    cv2.putText(image, str(landmark.angle), pos, cv2.FONT_HERSHEY_SIMPLEX, font, (255, 0, 0), 2)
 
-        if self._calc_z is False:
-            return
-
-        for angle in Z_ANGLES:
-            a = self._calc_z_angle_if_safe(angle)
-            if a >= 0:
-                angle_x = self.detected_pose.pose_landmarks.landmark[angle[1]].x * image_width
-                angle_y = self.detected_pose.pose_landmarks.landmark[angle[1]].y * image_height
-                margin = 15
+            if self._calc_z and landmark.z_angle is not None:  # Draw calculated z angles if enabled
+                angle_x = landmark.x * image_width
+                angle_y = landmark.y * image_height
                 if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
-                    text_position = (int(angle_x) + 15, int(angle_y) + 20)
-                    cv2.putText(image, str(a), text_position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), 2)
+                    pos = (int(angle_x) + 20, int(angle_y) + 20)
+                    cv2.putText(image, str(landmark.z_angle), pos, cv2.FONT_HERSHEY_SIMPLEX, font, (255, 255, 255), 2)
 
     def draw_3d_environment(self):
         """
-        Draws the landmarks and the connections wit matplotlib.
+        Draws landmarks and connections with matplotlib in a new image.
 
         Returns:
           A three channel RGB image represented as numpy ndarray with the body in a
@@ -220,10 +257,16 @@ class Humandroid:
         ax.axes.get_yaxis().set_ticklabels([])
         ax.axes.get_zaxis().set_ticklabels([])
 
-        if self.detected_pose.pose_landmarks:
-            pose = self.detected_pose.pose_landmarks.landmark
-            num_landmarks = len(pose)
-            # Draws the connections
+        if self.detected_pose.pose_landmarks:  # If MediaPipe detect a body pose
+
+            # Zoom in/out axis
+            top = self.computed_pose["pose_landmarks"][PoseLandmark.RIGHT_EYE]
+            bottom = self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_ANKLE]
+            ax.set_ylim([bottom.y+0.5, top.y-0.5])
+
+            landmarks = self.computed_pose["pose_landmarks"]
+            num_landmarks = len(landmarks)
+            # Draw the connections
             for connection in self._mp_solution_pose.POSE_CONNECTIONS:
                 start = connection[0]
                 end = connection[1]
@@ -231,9 +274,18 @@ class Humandroid:
                 if not (0 <= start < num_landmarks and 0 <= end < num_landmarks):
                     continue
 
-                ax.plot([pose[start].x, pose[end].x], [pose[start].y, pose[end].y], [pose[start].z, pose[end].z])
+                ax.plot(
+                    [landmarks[start].x, landmarks[end].x],
+                    [landmarks[start].y, landmarks[end].y],
+                    [landmarks[start].z, landmarks[end].z]
+                )
 
-        # Draw the renderer
+            # Draw calculated angles
+            for landmark in landmarks:
+                if landmark.angle is not None:
+                    ax.text(landmark.x, landmark.y, landmark.z, str(landmark.angle), fontsize=8)
+
+        # Draw the render
         self._plt_fig.canvas.draw()
 
         # Plot canvas to a three channel RGB image represented as numpy ndarray

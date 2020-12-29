@@ -129,7 +129,7 @@ class Humandroid:
             image,
             self.detected_pose.pose_landmarks,
             self._mp_solution_pose.POSE_CONNECTIONS,  # UPPER_BODY_POSE_CONNECTIONS: available next release MediaPipe
-            DrawingSpec(color=(255, 0, 0)),
+            DrawingSpec(color=(0, 0, 255)),
             DrawingSpec(color=(0, 255, 0))
         )
 
@@ -225,7 +225,7 @@ class Humandroid:
                 angle_y = landmark.y * image_height
                 if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
                     pos = (int(angle_x) - 15, int(angle_y) + 20)
-                    cv2.putText(image, str(landmark.angle), pos, cv2.FONT_HERSHEY_SIMPLEX, font, (255, 0, 0), 2)
+                    cv2.putText(image, str(landmark.angle), pos, cv2.FONT_HERSHEY_SIMPLEX, font, (255, 255, 0), 2)
 
             if self._calc_z and landmark.z_angle is not None:  # Draw calculated z angles if enabled
                 angle_x = landmark.x * image_width

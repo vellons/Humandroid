@@ -1,23 +1,34 @@
 import cv2
 import math
-import matplotlib.pyplot as plt
 import mediapipe as mp
 from mediapipe.python.solutions.pose import PoseLandmark
 from mediapipe.python.solutions.drawing_utils import DrawingSpec
 from mediapipe.python.solutions.drawing_utils import VISIBILITY_THRESHOLD
 import numpy as np
+import json
 
 from humandroid.body_landmark import HumandroidBodyLandmark
 
+# TODO: merge all these arrays in a JSON configuration
 ANGLES = [
     (PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW, PoseLandmark.LEFT_WRIST),  # gomito sx
     (PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW, PoseLandmark.RIGHT_WRIST),  # gomito dx
     (PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW),  # spalla sx
     (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW),  # spalla dx
-    (PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE),  # anca sx
-    (PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE),  # anca dx
-    (PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE, PoseLandmark.LEFT_ANKLE),  # ginocchio sx
-    (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE, PoseLandmark.RIGHT_ANKLE)  # ginocchio dx
+    # (PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE),  # anca sx
+    # (PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE),  # anca dx
+    # (PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE, PoseLandmark.LEFT_ANKLE),  # ginocchio sx
+    # (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE, PoseLandmark.RIGHT_ANKLE),  # ginocchio dx
+]
+
+# WIP: (id, direct/indirect, offset)
+ANGLES_WEBOTS_MOTOR_ID_OFFSET = [
+    ("Left_Hand", -1, 180),
+    ("Right_Hand", 1, 180),
+    ("Left_Arm1", 1, 0),
+    ("Right_Arm1", -1, 0),
+    # ("Left_Hip", 1, 180),
+    # ("Right_Hip", -1, 180),
 ]
 
 Z_ANGLES = [
@@ -27,13 +38,19 @@ Z_ANGLES = [
     (PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE, PoseLandmark.RIGHT_ANKLE)  # ginocchio dx
 ]
 
+# WIP: (id, direct/indirect, offset)
+Z_ANGLES_WEBOTS_MOTOR_ID_OFFSET = [
+    # ("Left_Shoulder", 1, 0),
+    # ("Right_Shoulder", -1, 0),
+]
+
 
 class Humandroid:
     """
     Human pose detection to control humandroid robots.
     Works with MediaPipe technology
 
-    Please refer to https://mediapipe.dev/ for more info.
+    Please refer to https://mediapipe.dev/ for more info about the pose processing.
     """
 
     _calc_z = False
@@ -46,7 +63,8 @@ class Humandroid:
     detected_pose = None  # Data directly form MediaPipe
     computed_pose = None  # Computed data for humandroid robot with servo angles
 
-    _plt_fig = None  # Use inside draw_3d_environment()
+    _plt_fig = None  # Used inside draw_3d_environment()
+    _webots_socket = None  # Used inside calc_and_send_angles_to_webots_socket()
 
     def __init__(self, static_image_mode=False, upper_body_only=False, calc_z=False):
         """
@@ -245,6 +263,7 @@ class Humandroid:
 
         if self._plt_fig is None:
             # Initialize at first execution
+            import matplotlib.pyplot as plt
             self._plt_fig = plt.figure()
 
         self._plt_fig.clf()  # Clear figure and configure plot
@@ -262,7 +281,7 @@ class Humandroid:
             # Zoom in/out axis
             top = self.computed_pose["pose_landmarks"][PoseLandmark.RIGHT_EYE]
             bottom = self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_ANKLE]
-            ax.set_ylim([bottom.y+0.5, top.y-0.5])
+            ax.set_ylim([bottom.y + 0.5, top.y - 0.5])
 
             landmarks = self.computed_pose["pose_landmarks"]
             num_landmarks = len(landmarks)
@@ -293,3 +312,93 @@ class Humandroid:
         image = image.reshape(self._plt_fig.canvas.get_width_height()[::-1] + (3,))
         image = image[70:400, 150:500]
         return image
+
+    def calc_and_send_angles_to_webots_socket(self, host, port, block_on_error=True):
+        """
+        Work In Progress method.
+        This is a TEST.
+        This method create a socket communication to send the calculated motor's angle to Webots simulator.
+        Download the simulator here: https://cyberbotics.com/
+        This data can be used with Webots to control the "khr-2hv" robot: https://cyberbotics.com/doc/guide/khr-2hv
+        You can import from: add > PROTO nodes (Webots Project) > robots > kondo > khr-2hv.
+        See also webots/ folder.
+
+        Args:
+          host: IP for socket connection.
+          port: port for socket connection.
+          block_on_error: if true the program will raise an Exception if the socket communication fail.
+
+        Returns:
+          Return nothing but you can print the calculated angle inside self.computed_pose["webots_khw-2hv"].
+        """
+
+        if self._webots_socket is None:
+            # Initialize at first execution
+            print("Opening socket with: {}:{}".format(host, port))
+            try:
+                import socket
+                self._webots_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self._webots_socket.connect((host, port))
+            except Exception as e:
+                self._webots_socket = None
+                if block_on_error:
+                    raise Exception(e)
+                else:
+                    print("calc_and_send_angles_to_webots_socket(): {}".format(e))
+
+        # TODO: merge ANGLES and Z_ANGLES array
+        motors = []
+        # x and y
+        for idx, angle in enumerate(ANGLES):
+            webots = ANGLES_WEBOTS_MOTOR_ID_OFFSET[idx]
+            pose_angle = self.computed_pose["pose_landmarks"][angle[1]].angle
+            # Calculate angle that works with the robot servomotor
+            if pose_angle is not None:
+                if webots[1] == 1:
+                    motor = {"id": webots[0], "angle": pose_angle - webots[2]}
+                else:
+                    motor = {"id": webots[0], "angle": webots[2] - pose_angle}
+                motors.append(motor)
+            else:
+                motor = {"id": webots[0], "angle": 0}  # Safe value
+                motors.append(motor)
+
+        # z
+        if self._calc_z:
+            # for idx, angle in enumerate(Z_ANGLES):
+            #     webots = Z_ANGLES_WEBOTS_MOTOR_ID_OFFSET[idx]
+            #     pose_angle = self.computed_pose["pose_landmarks"][angle[1]].z_angle
+            #     # Calculate angle that works with the robot servomotor
+            #     if pose_angle is not None:
+            #         if webots[1] == 1:
+            #             motor = {"id": webots[0], "angle": pose_angle - webots[2]}
+            #         else:
+            #             motor = {"id": webots[0], "angle": webots[2] - pose_angle}
+            #         motors.append(motor)
+            #     else:
+            #         motor = {"id": webots[0], "angle": 0}  # Safe value
+            #         motors.append(motor)
+
+            if self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_KNEE].z_angle is not None:
+                bottom_angle = 100 - self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_KNEE].z_angle
+                if bottom_angle < 0:
+                    bottom_angle = 0
+                # TODO: take this form JSON configuration
+                motors.append({"id": "Left_Leg1", "angle": bottom_angle})
+                motors.append({"id": "Left_Leg3", "angle": -bottom_angle * 2})
+                motors.append({"id": "Left_Ankle", "angle": -bottom_angle})
+                motors.append({"id": "Right_Leg1", "angle": -bottom_angle})
+                motors.append({"id": "Right_leg3", "angle": bottom_angle * 2})
+                motors.append({"id": "Right_Ankle", "angle": bottom_angle})
+
+        self.computed_pose["webots_khw-2hv"] = json.dumps(motors)
+
+        try:
+            # Send information with socket
+            self._webots_socket.sendall(str(self.computed_pose["webots_khw-2hv"]).encode())
+        except Exception as e:
+            if block_on_error:
+                raise Exception(e)
+            else:
+                print("calc_and_send_angles_to_webots_socket(): {}".format(e))
+                self._webots_socket = None  # Try to restart connection next time

@@ -1,0 +1,20 @@
+#VRML_SIM R2021a utf8
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.3325285281926153 0.9366126192559187 0.11037019248248352 0.6207813381457526
+  position 0.8368934724815208 0.4619876964818384 1.2197872523835116
+}
+TexturedBackground {
+  texture "empty_office"
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 5 5
+}
+Khr2hv {
+  translation 0 0.25 0
+  controller "humandroid_socket"
+}

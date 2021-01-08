@@ -1,6 +1,9 @@
 # Humandroid body pose
 
-The goal of this project is to have a humanoid robot imitate the movements of a human.
+The goal of this project is to have a REAL humanoid robot imitate the movements of a human.
+
+The example below shows a simulation with Webots.
+![Webots simulation](media/webots_simulation.gif)
 
 This program use [MediaPipe](https://mediapipe.dev) to detect the body pose.<br>
 MediaPipe Pose is a ML solution for high-fidelity body pose, 
@@ -20,7 +23,7 @@ In the example below, the yellow labels represent the angles that the servomotor
 
 ![Body pose example](media/pose_full_body_example.gif)
 
-JSON data representation example: (only 1 landmarks)
+JSON data representation example: (only 1 landmark)
 ```
 {
     "pose_landmarks": [

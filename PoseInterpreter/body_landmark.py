@@ -1,7 +1,7 @@
 import json
 
 
-class HumandroidBodyLandmark:
+class PoseInterpreterBodyLandmark:
 
     def __init__(self, identifier, name, x=None, y=None, z=None, visibility=0, angle=None, z_angle=None):
         self.id = identifier

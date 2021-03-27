@@ -1,10 +1,13 @@
+# Sent data via websocket to https://github.com/vellons/SimplePYBotSDK
 import cv2
 import time
-from PoseInterpreter.poseInterpreter import PoseInterpreter
+from PoseInterpreter.poseInterpreterSimplePYBotSDK import PoseInterpreterSimplePyBotSDK
+
+WEBSOCKET_HOST = "ws://localhost:65432"
 
 if __name__ == '__main__':
 
-    camera = cv2.VideoCapture(0)
+    camera = cv2.VideoCapture(1)
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
 
@@ -12,8 +15,9 @@ if __name__ == '__main__':
     frame_counter = 0
     fps = ""
 
-    poseInterpreter = PoseInterpreter(
+    poseInterpreter = PoseInterpreterSimplePyBotSDK(
         config_path="configurations/simplepybotsdk_webots.json",
+        host=WEBSOCKET_HOST,
         calc_z=True
     )
 
@@ -31,8 +35,9 @@ if __name__ == '__main__':
         poseInterpreter.draw_landmarks(image)
         poseInterpreter.process_angles()
         poseInterpreter.draw_angles(image)
-        # poseInterpreter.compute_point_to_point()
-        # print(poseInterpreter.computed_ptp)
+        poseInterpreter.compute_point_to_point()
+        poseInterpreter.send_ptp_with_websocket()
+        print(poseInterpreter.computed_ptp)
         # print(poseInterpreter.computed_pose)
         # print(poseInterpreter.computed_pose["pose_landmarks"][13].angle)  # Print left elbow angle
 

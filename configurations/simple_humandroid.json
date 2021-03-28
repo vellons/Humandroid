@@ -1,10 +1,11 @@
 {
-  "id": "simple_py_bot_sdk_webots_khr2hv_v1",
-  "version": "0.1",
-  "name": "SimplePyBotBridge",
+  "id": "simple_humandroid",
+  "version": "1.0",
+  "name": "SimplePyBotSDKExample",
   "joints": {
     "l_shoulder_y": {
       "offset": 0.0,
+      "orientation": "direct",
       "type": "xy",
       "points": [
         "LEFT_HIP",
@@ -14,6 +15,7 @@
     },
     "r_shoulder_y": {
       "offset": 0.0,
+      "orientation": "direct",
       "type": "xy",
       "points": [
         "RIGHT_HIP",
@@ -22,7 +24,8 @@
       ]
     },
     "l_elbow_y": {
-      "offset": 0.0,
+      "offset": -180.0,
+      "orientation": "indirect",
       "type": "xy",
       "points": [
         "LEFT_SHOULDER",
@@ -31,7 +34,8 @@
       ]
     },
     "r_elbow_y": {
-      "offset": 0.0,
+      "offset": -180.0,
+      "orientation": "indirect",
       "type": "xy",
       "points": [
         "RIGHT_SHOULDER",

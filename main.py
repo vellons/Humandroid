@@ -4,17 +4,18 @@ from PoseInterpreter.poseInterpreter import PoseInterpreter
 
 if __name__ == '__main__':
 
-    camera = cv2.VideoCapture(0)
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
+    camera = cv2.VideoCapture(1)
+    # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
 
     start_time = time.time()
     frame_counter = 0
     fps = ""
 
     poseInterpreter = PoseInterpreter(
-        config_path="configurations/simplepybotsdk_webots.json",
-        calc_z=True
+        config_path="configurations/simple_humandroid.json",
+        upper_body_only=False,
+        calc_z=False
     )
 
     while camera.isOpened():
@@ -31,8 +32,7 @@ if __name__ == '__main__':
         poseInterpreter.draw_landmarks(image)
         poseInterpreter.process_angles()
         poseInterpreter.draw_angles(image)
-        # poseInterpreter.compute_point_to_point()
-        # print(poseInterpreter.computed_ptp)
+        print(poseInterpreter.computed_ptp)
         # print(poseInterpreter.computed_pose)
         # print(poseInterpreter.computed_pose["pose_landmarks"][13].angle)  # Print left elbow angle
 

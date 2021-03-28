@@ -27,12 +27,9 @@ class PoseInterpreter:
 
     detected_pose = None  # Data directly form MediaPipe
     computed_pose = None  # Computed data for humandroid robot with servo angles
+    computed_ptp = {}  # Computed point to point pose (for humandroid robot motors)
 
     _plt_fig = None  # Used inside draw_3d_environment()
-
-    _joints_xy = []
-    _joints_z = []
-    computed_ptp = {}
 
     def __init__(self, config_path: str, static_image_mode: bool = False, upper_body_only: bool = False,
                  calc_z: bool = False):
@@ -58,15 +55,14 @@ class PoseInterpreter:
                 self.configuration = json.load(f)
                 for key, j in self.configuration["joints"].items():
                     angle = (PoseLandmark[j["points"][0]], PoseLandmark[j["points"][1]], PoseLandmark[j["points"][2]])
-                    if j["type"] == "xy":
-                        self._joints_xy.append(angle)
-                    elif j["type"] == "z":
-                        self._joints_z.append(angle)
-
-            print("joints_xy: {}".format(self._joints_xy))
-            print("joints_z: {}".format(self._joints_z))
+                    j["pose_landmarks"] = angle
         except Exception as e:
-            print("Failed to load configuration. Error: {}".format(e))
+            print("Failed to load configuration. Impossible to calc angles. Error: {}".format(e))
+            self.configuration = {
+                "joints": {}
+            }
+
+        # print("Configuration", self.configuration)
 
         self._mp_pose = self._mp_solution_pose.Pose(
             static_image_mode=static_image_mode,
@@ -199,21 +195,36 @@ class PoseInterpreter:
     def process_angles(self):
         """
         Calculate focus angles from the current person detected.
+        Also compute motors angle dict to move a humandroid robot.
+
 
         Returns:
           A dict object with a "pose_landmarks" field that contains the pose
           landmarks on the most prominent person detected and calculated angles.
         """
+        ptp = {}
+        for key, j in self.configuration["joints"].items():
 
-        for angle in self._joints_xy:
-            a = self._calc_angle_if_safe(angle)
-            self.computed_pose["pose_landmarks"][angle[1]].angle = a
+            if j["type"] == "xy":
+                a = self._calc_angle_if_safe(j["pose_landmarks"])
+                if a is not None:
+                    if j["orientation"] == "indirect":
+                        a = - a - j["offset"]
+                    else:
+                        a = a - j["offset"]
+                    ptp[key] = a
+                    self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].angle = a
 
-        if self._calc_z:
-            for angle in self._joints_z:
-                a = self._calc_z_angle_if_safe(angle)
-                self.computed_pose["pose_landmarks"][angle[1]].z_angle = a
-
+            elif self._calc_z and j["type"] == "z":
+                a = self._calc_z_angle_if_safe(j["pose_landmarks"])
+                if a is not None:
+                    if j["orientation"] == "indirect":
+                        a = - a - j["offset"]
+                    else:
+                        a = a - j["offset"]
+                    ptp[key] = a
+                    self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].z_angle = a + j["offset"]
+        self.computed_ptp = ptp
         return self.computed_pose
 
     def draw_angles(self, image: np.ndarray):
@@ -242,22 +253,6 @@ class PoseInterpreter:
                 if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
                     pos = (int(angle_x) + 20, int(angle_y) + 20)
                     cv2.putText(image, str(landmark.z_angle), pos, cv2.FONT_HERSHEY_SIMPLEX, font, (255, 255, 255), 2)
-
-    def compute_point_to_point(self):
-        """
-        Compute motors angle dict to move a humandroid robot.
-        """
-        ptp = {}
-        for key, j in self.configuration["joints"].items():
-            if j["type"] == "xy":
-                angle = self.computed_pose["pose_landmarks"][PoseLandmark[j["points"][1]]].angle
-                if angle is not None:
-                    ptp[key] = angle
-            elif j["type"] == "z":
-                angle = self.computed_pose["pose_landmarks"][PoseLandmark[j["points"][1]]].z_angle
-                if angle is not None:
-                    ptp[key] = angle
-        self.computed_ptp = ptp
 
     def draw_3d_environment(self):
         """

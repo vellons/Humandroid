@@ -297,13 +297,15 @@ class PoseInterpreter:
 
             # Zoom in/out axis
             top = self.computed_pose["pose_landmarks"][PoseLandmark.RIGHT_EYE]
-            bottom = self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_ANKLE]
+            bottom = self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_HIP]
+            if not self._upper_body_only:
+                bottom = self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_ANKLE]
             ax.set_ylim([bottom.y + 0.5, top.y - 0.5])
 
             landmarks = self.computed_pose["pose_landmarks"]
             num_landmarks = len(landmarks)
             # Draw the connections
-            for connection in self._mp_solution_pose.POSE_CONNECTIONS:
+            for connection in self._mp_connections:
                 start = connection[0]
                 end = connection[1]
 

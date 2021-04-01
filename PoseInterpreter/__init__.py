@@ -1,1 +1,0 @@
-from PoseInterpreter.poseInterpreter import PoseInterpreter

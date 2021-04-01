@@ -3,6 +3,17 @@
   "version": "1.0",
   "name": "SimplePyBotSDKExample",
   "joints": {
+    "head_z": {
+      "offset": 50.0,
+      "orientation": "direct",
+      "type": "math",
+      "math_angle": "head_z",
+      "points": [
+        "LEFT_SHOULDER",
+        "NOSE",
+        "RIGHT_SHOULDER"
+      ]
+    },
     "l_shoulder_y": {
       "offset": 0.0,
       "orientation": "direct",

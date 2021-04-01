@@ -238,7 +238,24 @@ class PoseInterpreter:
                     else:
                         a = a - j["offset"]
                     ptp[key] = a
-                    self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].z_angle = a + j["offset"]
+                    self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].z_angle = a
+
+            elif j["type"] == "math" and "math_angle" in j:
+                math_angle = None
+                if j["math_angle"] == "head_z":
+                    left = self.computed_pose["pose_landmarks"][j["pose_landmarks"][0]].x
+                    nose = self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].x
+                    right = self.computed_pose["pose_landmarks"][j["pose_landmarks"][2]].x
+                    if left is not None and nose is not None and right is not None:
+                        math_angle = (nose - left) / (right - left) * 100
+
+                if j["orientation"] == "indirect":
+                    math_angle = - math_angle - j["offset"]
+                else:
+                    math_angle = math_angle - j["offset"]
+                ptp[key] = int(math_angle)
+                self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].math_angle = math_angle
+
         self.computed_ptp = ptp
         return self.computed_pose
 
@@ -260,14 +277,24 @@ class PoseInterpreter:
                 angle_y = landmark.y * image_height
                 if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
                     pos = (int(angle_x) - 15, int(angle_y) + 20)
-                    cv2.putText(image, str(landmark.angle), pos, cv2.FONT_HERSHEY_SIMPLEX, font, (255, 0, 0), 2)
+                    cv2.putText(image, str(int(landmark.angle)), pos,
+                                cv2.FONT_HERSHEY_SIMPLEX, font, (255, 0, 0), 2)
 
             if self._calc_z and landmark.z_angle is not None:  # Draw calculated z angles if enabled
                 angle_x = landmark.x * image_width
                 angle_y = landmark.y * image_height
                 if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
                     pos = (int(angle_x) + 20, int(angle_y) + 20)
-                    cv2.putText(image, str(landmark.z_angle), pos, cv2.FONT_HERSHEY_SIMPLEX, font, (255, 255, 255), 2)
+                    cv2.putText(image, str(landmark.z_angle), pos,
+                                cv2.FONT_HERSHEY_SIMPLEX, font, (255, 255, 255), 2)
+
+            if landmark.math_angle is not None:  # Draw calculated math_angles
+                angle_x = landmark.x * image_width
+                angle_y = landmark.y * image_height
+                if margin <= angle_x <= image_width - margin and margin <= angle_y <= image_height - margin:
+                    pos = (int(angle_x) - 5, int(angle_y) + 20)
+                    cv2.putText(image, str(int(landmark.math_angle)), pos,
+                                cv2.FONT_HERSHEY_SIMPLEX, font, (0, 0, 255), 2)
 
     def draw_3d_environment(self):
         """

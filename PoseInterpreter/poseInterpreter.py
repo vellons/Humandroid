@@ -241,7 +241,6 @@ class PoseInterpreter:
                     self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].z_angle = a
 
             elif j["type"] == "math" and "math_angle" in j:
-                math_angle = None
                 if j["math_angle"] == "head_z":
                     left = self.computed_pose["pose_landmarks"][j["pose_landmarks"][0]].x
                     nose = self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].x
@@ -249,14 +248,14 @@ class PoseInterpreter:
                     if left is not None and nose is not None and right is not None:
                         math_angle = (nose - left) / (right - left) * 100
 
-                if j["orientation"] == "indirect":
-                    math_angle = - math_angle - j["offset"]
-                else:
-                    math_angle = math_angle - j["offset"]
-                ptp[key] = int(math_angle)
-                self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].math_angle = math_angle
+                        if j["orientation"] == "indirect":
+                            math_angle = - math_angle - j["offset"]
+                        else:
+                            math_angle = math_angle - j["offset"]
+                        ptp[key] = int(math_angle)
+                        self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].math_angle = math_angle
+                        self.computed_ptp = ptp
 
-        self.computed_ptp = ptp
         return self.computed_pose
 
     def draw_angles(self, image: np.ndarray):

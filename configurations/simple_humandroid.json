@@ -24,10 +24,30 @@
         "LEFT_ELBOW"
       ]
     },
+    "l_shoulder_x": {
+      "offset": 0.0,
+      "orientation": "direct",
+      "type": "z",
+      "points": [
+        "LEFT_HIP",
+        "LEFT_SHOULDER",
+        "LEFT_ELBOW"
+      ]
+    },
     "r_shoulder_y": {
       "offset": 0.0,
       "orientation": "direct",
       "type": "xy",
+      "points": [
+        "RIGHT_HIP",
+        "RIGHT_SHOULDER",
+        "RIGHT_ELBOW"
+      ]
+    },
+    "r_shoulder_x": {
+      "offset": 0.0,
+      "orientation": "direct",
+      "type": "z",
       "points": [
         "RIGHT_HIP",
         "RIGHT_SHOULDER",

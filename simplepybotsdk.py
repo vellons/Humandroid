@@ -19,6 +19,7 @@ if __name__ == '__main__':
         config_path="configurations/simple_humandroid.json",
         host=WEBSOCKET_HOST,
         upper_body_only=False,
+        face_connections=True,
         calc_z=False
     )
 
@@ -53,12 +54,6 @@ if __name__ == '__main__':
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # RGB image to BGR
         cv2.putText(image, fps, (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         cv2.imshow("Humandroid body pose V1.0", image)
-
-        # Show 3d environment - Comment this to go faster
-        # three_d_env = humandroid.draw_3d_environment()
-        # three_d_env = cv2.cvtColor(three_d_env, cv2.COLOR_RGB2BGR)  # RGB image to BGR
-        # three_d_env = cv2.resize(three_d_env, (0, 0), fx=1.5, fy=1.5)  # Resize image
-        # cv2.imshow('3D environment', three_d_env)
 
         if cv2.waitKey(5) & 0xFF == 27:
             break

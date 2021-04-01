@@ -9,8 +9,8 @@ from PoseInterpreter import PoseInterpreter
 class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
 
     def __init__(self, config_path: str, host: str, static_image_mode: bool = False, upper_body_only: bool = False,
-                 calc_z: bool = False, ws_block_on_error: bool = False):
-        super().__init__(config_path, static_image_mode, upper_body_only, calc_z)
+                 face_connections: bool = True, calc_z: bool = False, ws_block_on_error: bool = False):
+        super().__init__(config_path, static_image_mode, upper_body_only, face_connections, calc_z)
 
         self._websocket_host = host
         self._websocket_simplepybotsdk_app = None

@@ -4,7 +4,7 @@ from PoseInterpreter.poseInterpreter import PoseInterpreter
 
 if __name__ == '__main__':
 
-    camera = cv2.VideoCapture(1)
+    camera = cv2.VideoCapture(0)
     # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
 
@@ -15,6 +15,7 @@ if __name__ == '__main__':
     poseInterpreter = PoseInterpreter(
         config_path="configurations/simple_humandroid.json",
         upper_body_only=False,
+        face_connections=False,
         calc_z=False
     )
 

@@ -32,7 +32,7 @@ class PoseInterpreter:
     _plt_fig = None  # Used inside draw_3d_environment()
 
     def __init__(self, config_path: str, static_image_mode: bool = False, upper_body_only: bool = False,
-                 calc_z: bool = False):
+                 face_connections: bool = True, calc_z: bool = False):
         """
         Initializes Humandroid object and MediaPipe.
 
@@ -47,8 +47,9 @@ class PoseInterpreter:
 
         print("PoseInterpreter initialization")
         self.config_path = config_path
-        self._calc_z = calc_z
         self._upper_body_only = upper_body_only
+        self._face_connections = face_connections
+        self._calc_z = calc_z
 
         try:
             with open(self.config_path) as f:
@@ -63,6 +64,23 @@ class PoseInterpreter:
             }
 
         # print("Configuration", self.configuration)
+
+        self._mp_connections = self._mp_solution_pose.POSE_CONNECTIONS
+        if self._upper_body_only:
+            self._mp_connections = self._mp_solution_pose.UPPER_BODY_POSE_CONNECTIONS
+
+        if not self._face_connections:
+            self._mp_connections = list(self._mp_connections)
+            self._mp_connections.remove((PoseLandmark.NOSE, PoseLandmark.RIGHT_EYE_INNER))
+            self._mp_connections.remove((PoseLandmark.RIGHT_EYE_INNER, PoseLandmark.RIGHT_EYE))
+            self._mp_connections.remove((PoseLandmark.RIGHT_EYE, PoseLandmark.RIGHT_EYE_OUTER))
+            self._mp_connections.remove((PoseLandmark.RIGHT_EYE_OUTER, PoseLandmark.RIGHT_EAR))
+            self._mp_connections.remove((PoseLandmark.NOSE, PoseLandmark.LEFT_EYE_INNER))
+            self._mp_connections.remove((PoseLandmark.LEFT_EYE_INNER, PoseLandmark.LEFT_EYE))
+            self._mp_connections.remove((PoseLandmark.LEFT_EYE, PoseLandmark.LEFT_EYE_OUTER))
+            self._mp_connections.remove((PoseLandmark.LEFT_EYE_OUTER, PoseLandmark.LEFT_EAR))
+            self._mp_connections.remove((PoseLandmark.MOUTH_RIGHT, PoseLandmark.MOUTH_LEFT))
+            self._mp_connections = self._mp_connections
 
         self._mp_pose = self._mp_solution_pose.Pose(
             static_image_mode=static_image_mode,
@@ -127,13 +145,10 @@ class PoseInterpreter:
         if not self.detected_pose.pose_landmarks:
             return
 
-        connections = self._mp_solution_pose.POSE_CONNECTIONS
-        if self._upper_body_only:
-            connections = self._mp_solution_pose.UPPER_BODY_POSE_CONNECTIONS
         self._mp_solution_drawing.draw_landmarks(
             image,
             self.detected_pose.pose_landmarks,
-            connections,
+            self._mp_connections,
             DrawingSpec(color=(255, 0, 0)),
             DrawingSpec(color=(0, 255, 0))
         )

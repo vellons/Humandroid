@@ -175,9 +175,9 @@ class PoseInterpreter:
         # Calc angle
         a = math.atan2(landmarks[points[0]].y - landmarks[points[1]].y, landmarks[points[0]].x - landmarks[points[1]].x)
         b = math.atan2(landmarks[points[2]].y - landmarks[points[1]].y, landmarks[points[2]].x - landmarks[points[1]].x)
-        result = math.fabs(math.degrees(a - b))  # Make angle always positive
-        if result > 180:
-            result = (360.0 - result)
+        result = math.degrees(a - b)
+        if result < 0:
+            result = (360.0 + result)
         return int(result)
 
     def _calc_z_angle_if_safe(self, points: tuple):
@@ -202,16 +202,15 @@ class PoseInterpreter:
         # Calc z angle
         a = math.atan2(landmarks[points[0]].y - landmarks[points[1]].y, landmarks[points[0]].z - landmarks[points[1]].z)
         b = math.atan2(landmarks[points[2]].y - landmarks[points[1]].y, landmarks[points[2]].z - landmarks[points[1]].z)
-        result = math.fabs(math.degrees(a - b))  # Make angle always positive
-        if result > 180:
-            result = (360.0 - result)
+        result = math.degrees(a - b)
+        if result < 0:
+            result = (360.0 + result)
         return int(result)
 
     def process_angles(self):
         """
         Calculate focus angles from the current person detected.
         Also compute motors angle dict to move a humandroid robot.
-
 
         Returns:
           A dict object with a "pose_landmarks" field that contains the pose
@@ -224,9 +223,9 @@ class PoseInterpreter:
                 a = self._calc_angle_if_safe(j["pose_landmarks"])
                 if a is not None:
                     if j["orientation"] == "indirect":
-                        a = - a - j["offset"]
+                        a = 360 - a + j["offset"]
                     else:
-                        a = a - j["offset"]
+                        a = a + j["offset"]
                     ptp[key] = a
                     self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].angle = a
 
@@ -234,9 +233,9 @@ class PoseInterpreter:
                 a = self._calc_z_angle_if_safe(j["pose_landmarks"])
                 if a is not None:
                     if j["orientation"] == "indirect":
-                        a = - a - j["offset"]
+                        a = 360 - a + j["offset"]
                     else:
-                        a = a - j["offset"]
+                        a = a + j["offset"]
                     ptp[key] = a
                     self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].z_angle = a
 
@@ -249,13 +248,13 @@ class PoseInterpreter:
                         math_angle = (nose - left) / (right - left) * 100
 
                         if j["orientation"] == "indirect":
-                            math_angle = - math_angle - j["offset"]
+                            math_angle = 360 - math_angle + j["offset"]
                         else:
-                            math_angle = math_angle - j["offset"]
+                            math_angle = math_angle + j["offset"]
                         ptp[key] = int(math_angle)
                         self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].math_angle = math_angle
-                        self.computed_ptp = ptp
 
+        self.computed_ptp = ptp
         return self.computed_pose
 
     def draw_angles(self, image: np.ndarray):

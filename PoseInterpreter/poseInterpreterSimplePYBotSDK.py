@@ -3,7 +3,7 @@ import websocket
 from websocket import WebSocketConnectionClosedException
 import threading
 
-from PoseInterpreter import PoseInterpreter
+from PoseInterpreter.poseInterpreter import PoseInterpreter
 
 
 class PoseInterpreterSimplePyBotSDK(PoseInterpreter):

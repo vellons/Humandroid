@@ -4,7 +4,7 @@
   "name": "SimplePyBotSDKExample",
   "joints": {
     "head_z": {
-      "offset": 50.0,
+      "offset": -50.0,
       "orientation": "direct",
       "type": "math",
       "math_angle": "head_z",
@@ -24,19 +24,9 @@
         "LEFT_ELBOW"
       ]
     },
-    "l_shoulder_x": {
-      "offset": 0.0,
-      "orientation": "direct",
-      "type": "z",
-      "points": [
-        "LEFT_HIP",
-        "LEFT_SHOULDER",
-        "LEFT_ELBOW"
-      ]
-    },
     "r_shoulder_y": {
       "offset": 0.0,
-      "orientation": "direct",
+      "orientation": "indirect",
       "type": "xy",
       "points": [
         "RIGHT_HIP",
@@ -44,9 +34,19 @@
         "RIGHT_ELBOW"
       ]
     },
+    "l_shoulder_x": {
+      "offset": 0.0,
+      "orientation": "indirect",
+      "type": "z",
+      "points": [
+        "LEFT_HIP",
+        "LEFT_SHOULDER",
+        "LEFT_ELBOW"
+      ]
+    },
     "r_shoulder_x": {
       "offset": 0.0,
-      "orientation": "direct",
+      "orientation": "indirect",
       "type": "z",
       "points": [
         "RIGHT_HIP",
@@ -56,7 +56,7 @@
     },
     "l_elbow_y": {
       "offset": -180.0,
-      "orientation": "indirect",
+      "orientation": "direct",
       "type": "xy",
       "points": [
         "LEFT_SHOULDER",

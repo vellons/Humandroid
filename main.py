@@ -2,7 +2,7 @@ import cv2
 import time
 from PoseInterpreter.poseInterpreter import PoseInterpreter
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     camera = cv2.VideoCapture(0)
     # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)

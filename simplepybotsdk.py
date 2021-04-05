@@ -5,7 +5,7 @@ from PoseInterpreter.poseInterpreterSimplePYBotSDK import PoseInterpreterSimpleP
 
 WEBSOCKET_HOST = "ws://192.168.1.131:65432"
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     camera = cv2.VideoCapture(0)
     # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)

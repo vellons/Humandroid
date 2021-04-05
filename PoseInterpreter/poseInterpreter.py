@@ -255,7 +255,45 @@ class PoseInterpreter:
                         self.computed_pose["pose_landmarks"][j["pose_landmarks"][1]].math_angle = math_angle
 
         self.computed_ptp = ptp
+        self._post_process_angles()
         return self.computed_pose
+
+    def _post_process_angles(self):
+        """
+        Method that check if all joint are in the correct position and not break the servomotors.
+        """
+
+        # Crossing arms (left)
+        if self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_ELBOW].angle is not None:
+            left_elbow = self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_ELBOW]
+            left_shoulder = self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_SHOULDER]
+            left_shoulder_angle = 0
+            if left_shoulder.angle is not None:
+                left_shoulder_angle = left_shoulder.angle
+
+            if left_elbow.angle < -7 and left_shoulder_angle < 60:
+                angle = 60
+                if "l_shoulder_x" in self.computed_ptp:
+                    angle = self.computed_ptp["l_shoulder_x"] if self.computed_ptp["l_shoulder_x"] > angle else angle
+                self.computed_ptp["l_shoulder_x"] = angle
+            elif not self._calc_z:
+                self.computed_ptp["l_shoulder_x"] = 0
+
+        # Crossing arms (right)
+        if self.computed_pose["pose_landmarks"][PoseLandmark.RIGHT_ELBOW].angle is not None:
+            right_elbow = self.computed_pose["pose_landmarks"][PoseLandmark.RIGHT_ELBOW]
+            right_shoulder = self.computed_pose["pose_landmarks"][PoseLandmark.RIGHT_SHOULDER]
+            right_shoulder_angle = 0
+            if right_shoulder.angle is not None:
+                right_shoulder_angle = right_shoulder.angle
+
+            if right_elbow.angle < -7 and right_shoulder_angle < 60:
+                angle = 60
+                if "r_shoulder_x" in self.computed_ptp:
+                    angle = self.computed_ptp["r_shoulder_x"] if self.computed_ptp["r_shoulder_x"] > angle else angle
+                self.computed_ptp["r_shoulder_x"] = angle
+            elif not self._calc_z:
+                self.computed_ptp["r_shoulder_x"] = 0
 
     def draw_angles(self, image: np.ndarray):
         """

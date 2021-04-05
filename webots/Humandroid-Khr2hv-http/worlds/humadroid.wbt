@@ -16,5 +16,5 @@ RectangleArena {
 }
 Khr2hv {
   translation 0 0.25 0
-  controller "humandroid_socket"
+  controller "humandroid_websocket_client"
 }

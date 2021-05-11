@@ -1,0 +1,78 @@
+{
+  "id": "simple_humandroid",
+  "version": "1.0",
+  "name": "SimplePyBotSDKExample",
+  "joints": {
+    "head_z": {
+      "offset": -50.0,
+      "orientation": "direct",
+      "type": "math",
+      "math_angle": "head_z",
+      "points": [
+        "LEFT_SHOULDER",
+        "NOSE",
+        "RIGHT_SHOULDER"
+      ]
+    },
+    "l_shoulder_y": {
+      "offset": 0.0,
+      "orientation": "direct",
+      "type": "xy",
+      "points": [
+        "LEFT_HIP",
+        "LEFT_SHOULDER",
+        "LEFT_ELBOW"
+      ]
+    },
+    "r_shoulder_y": {
+      "offset": 0.0,
+      "orientation": "indirect",
+      "type": "xy",
+      "points": [
+        "RIGHT_HIP",
+        "RIGHT_SHOULDER",
+        "RIGHT_ELBOW"
+      ]
+    },
+    "l_shoulder_x": {
+      "offset": 0.0,
+      "orientation": "indirect",
+      "type": "z",
+      "points": [
+        "LEFT_HIP",
+        "LEFT_SHOULDER",
+        "LEFT_ELBOW"
+      ]
+    },
+    "r_shoulder_x": {
+      "offset": 0.0,
+      "orientation": "indirect",
+      "type": "z",
+      "points": [
+        "RIGHT_HIP",
+        "RIGHT_SHOULDER",
+        "RIGHT_ELBOW"
+      ]
+    },
+    "l_elbow_y": {
+      "offset": -180.0,
+      "orientation": "direct",
+      "type": "xy",
+      "points": [
+        "LEFT_SHOULDER",
+        "LEFT_ELBOW",
+        "LEFT_WRIST"
+      ]
+    },
+    "r_elbow_y": {
+      "offset": -180.0,
+      "orientation": "indirect",
+      "type": "xy",
+      "points": [
+        "RIGHT_SHOULDER",
+        "RIGHT_ELBOW",
+        "RIGHT_WRIST"
+      ]
+    }
+  }
+}

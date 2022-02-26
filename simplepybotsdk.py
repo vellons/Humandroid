@@ -1,19 +1,52 @@
 # Sent data via websocket to https://github.com/vellons/SimplePYBotSDK
 import cv2
 import time
+import threading
+from flask import Flask, Response
+
 from PoseInterpreter.poseInterpreterSimplePYBotSDK import PoseInterpreterSimplePyBotSDK
+from camera_opencv2 import Camera
 
 WEBSOCKET_HOST = "ws://192.168.1.131:65432"
 
+app = Flask(__name__)
+mediapipe_image = None
+
+
+def gen():
+    """Video streaming generator function."""
+    while True:
+        frame = mediapipe_image
+
+        if frame is None:
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n \r\n')
+            continue
+        frame = cv2.imencode('.jpg', frame)[1].tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+
+@app.route('/video')
+def video_feed_a():
+    """Video streaming route. Put this in the src attribute of an img tag."""
+    return Response(gen(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+def run_flask():
+    app.run(host='0.0.0.0', threaded=True)
+
+
 if __name__ == "__main__":
-
-    camera = cv2.VideoCapture(0)
-    # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
-
     start_time = time.time()
     frame_counter = 0
     fps = ""
+
+    flask_thread = threading.Thread(target=run_flask, args=())
+    flask_thread.name = "flask"
+    flask_thread.daemon = True
+    flask_thread.start()
 
     poseInterpreter = PoseInterpreterSimplePyBotSDK(
         config_path="configurations/simple_humandroid.json",
@@ -23,11 +56,10 @@ if __name__ == "__main__":
         calc_z=False
     )
 
-    while camera.isOpened():
-        success, image = camera.read()  # Get image
-        if not success:
-            continue
+    camera = Camera()
 
+    while True:
+        image = camera.get_frame()
         image = cv2.flip(image, 1)  # Flip image for selfie-view
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR image to RGB
         image.flags.writeable = False  # To improve performance
@@ -53,10 +85,9 @@ if __name__ == "__main__":
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # RGB image to BGR
         cv2.putText(image, fps, (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        mediapipe_image = image
         cv2.namedWindow("Humandroid body pose V1.0", cv2.WINDOW_NORMAL)
         cv2.imshow("Humandroid body pose V1.0", image)
 
         if cv2.waitKey(5) & 0xFF == 27:
             break
-
-    camera.release()

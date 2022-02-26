@@ -114,7 +114,7 @@ class PoseInterpreter:
                 for idx, pose in enumerate(PoseLandmark):
                     landmark = PoseInterpreterBodyLandmark(
                         identifier=idx,
-                        name=str(PoseLandmark.value2member_map_[idx])
+                        name=str(idx),
                     )
                     self.computed_pose["pose_landmarks"].append(landmark)
                 return self.computed_pose
@@ -122,7 +122,7 @@ class PoseInterpreter:
             for idx, pose in enumerate(self.detected_pose.pose_landmarks.landmark):  # Copy pose info in landmark obj
                 landmark = PoseInterpreterBodyLandmark(
                     identifier=idx,
-                    name=str(PoseLandmark.value2member_map_[idx]),
+                    name=str(idx),
                     x=pose.x,
                     y=pose.y,
                     z=pose.z,

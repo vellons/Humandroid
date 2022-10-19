@@ -17,6 +17,7 @@ if __name__ == "__main__":
         display_face_connections=True,
         calc_z=False
     )
+    poseInterpreter.PLOT_ANIMATED_AZIMUTH = True
 
     while camera.isOpened():
         success, image = camera.read()  # Get image
@@ -45,16 +46,18 @@ if __name__ == "__main__":
 
         # Build output
         image.flags.writeable = True
+        poseInterpreter.draw_plot(image, x_offset=0, y_offset=668, scale=1.5)  # This will downgrade fps
+
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # RGB image to BGR
-        cv2.putText(image, fps, (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
+        cv2.putText(image, fps, (15, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
         cv2.namedWindow("Humandroid body pose V1.0", cv2.WINDOW_NORMAL)
         cv2.imshow("Humandroid body pose V1.0", image)
 
         # Show 3d environment - Comment this to go faster
-        three_d_env = poseInterpreter.get_graph_3d_environment()
-        three_d_env = cv2.cvtColor(three_d_env, cv2.COLOR_RGB2BGR)  # RGB image to BGR
-        three_d_env = cv2.resize(three_d_env, (0, 0), fx=1.5, fy=1.5)  # Resize image
-        cv2.imshow('3D environment', three_d_env)
+        # three_d_env = poseInterpreter.get_graph_3d_environment()
+        # three_d_env = cv2.cvtColor(three_d_env, cv2.COLOR_RGB2BGR)  # RGB image to BGR
+        # three_d_env = cv2.resize(three_d_env, (0, 0), fx=1.5, fy=1.5)  # Resize image
+        # cv2.imshow("3D environment", three_d_env)
 
         if cv2.waitKey(5) & 0xFF == 27:
             break

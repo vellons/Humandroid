@@ -1,5 +1,6 @@
-import cv2
 import math
+from typing import Mapping
+import cv2
 import mediapipe as mp
 from mediapipe.python.solutions.pose import PoseLandmark
 from mediapipe.python.solutions.drawing_utils import DrawingSpec, _normalize_color
@@ -32,9 +33,6 @@ class PoseInterpreter:
     computed_pose = None  # Computed data for humandroid robot with servo angles
     computed_ptp = {}  # Computed point to point pose (for humandroid robot motors)
 
-    _plt_fig = None  # Used inside draw_3d_environment()
-    _plt_azim = 1
-
     _FACE_LANDMARKS = frozenset([
         PoseLandmark.RIGHT_EYE_INNER, PoseLandmark.RIGHT_EYE,
         PoseLandmark.RIGHT_EYE_OUTER, PoseLandmark.RIGHT_EAR, PoseLandmark.MOUTH_RIGHT,
@@ -43,8 +41,13 @@ class PoseInterpreter:
     ])
 
     # Style configuration
-    POSE_LANDMARKS_THICKNESS = 8
-    POSE_LANDMARKS_CIRCLE_RADIUS = 2
+    POSE_CONN_THICKNES = 5
+    POSE_CONN_LEFT_COLOR = (0, 138, 255)
+    POSE_CONN_RIGHT_COLOR = (255, 165, 0)
+    POSE_CONN_DEFAULT_COLOR = (255, 255, 255)
+
+    POSE_LANDMARKS_THICKNESS = 9
+    POSE_LANDMARKS_CIRCLE_RADIUS = 4
     POSE_LANDMARKS_LEFT_COLOR = (0, 138, 255)
     POSE_LANDMARKS_RIGHT_COLOR = (255, 165, 0)
     POSE_LANDMARKS_NOSE_COLOR = (255, 48, 48)
@@ -56,8 +59,21 @@ class PoseInterpreter:
     ANGLE_Z_TEXT_COLOR = (255, 255, 255)
     ANGLE_MATH_TEXT_COLOR = (0, 0, 255)
 
-    PLOT_COLOR = (24, 240, 24)
-    PLOT_THICKNESS = 2
+    PLOT_LINE_THICKNESS = 2
+    PLOT_POINT_THICKNESS = 0.1
+    PLOT_CONN_LEFT_COLOR = (0, 138, 255)
+    PLOT_CONN_RIGHT_COLOR = (255, 165, 0)
+    PLOT_COLOR_DEFAULT = (24, 240, 24)
+    PLOT_POINT_COLOR = (10, 10, 10)
+    PLOT_ANIMATED_AZIMUTH = True
+    PLOT_ANIMATED_STEP = 3
+    PLOT_ANIMATED_MAX_DEGREE = 360
+    PLOT_DEFAULT_ELEV = 5
+    PLOT_DEFAULT_AZIM = 1
+
+    _plt_fig = None  # Used inside draw_3d_environment()
+    _plt_elev = PLOT_DEFAULT_ELEV
+    _plt_azim = PLOT_DEFAULT_AZIM
 
     def __init__(self, config_path: str, static_image_mode: bool = False,
                  display_face_connections: bool = True, calc_z: bool = False):
@@ -170,10 +186,13 @@ class PoseInterpreter:
             image,
             self.detected_pose.pose_landmarks,
             self._mp_connections,
-            landmark_drawing_spec=self.get_pose_landmarks_style()
+            landmark_drawing_spec=self.get_pose_landmarks_style(),
+            connection_drawing_spec=self.get_pose_connections_style(),
             # DrawingSpec(color=(255, 0, 0)),
             # DrawingSpec(color=(0, 255, 0))
-            # landmark_drawing_spec=self._mp_drawing_styles.get_default_pose_landmarks_style()
+            # landmark_drawing_spec=self._mp_drawing_styles.get_default_pose_landmarks_style(),
+            # connection_drawing_spec=DrawingSpec(color=self.POSE_LANDMARKS_NOSE_COLOR,
+            #     thickness=self.POSE_LANDMARKS_THICKNESS)
         )
 
     def _calc_angle_if_safe(self, points: tuple):
@@ -381,7 +400,50 @@ class PoseInterpreter:
                         circle_radius=self.POSE_LANDMARKS_CIRCLE_RADIUS)
         return pose_landmark_style
 
-    def get_graph_3d_environment(self, animated_azimuth: bool = True):
+    def get_pose_connections_style(self):
+        """Returns a pose connections drawing style.
+
+        Returns:
+            A mapping from each pose connection to its default drawing spec.
+        """
+        pose_conn_style = {}
+        left_spec = DrawingSpec(color=self.POSE_CONN_LEFT_COLOR, thickness=self.POSE_CONN_THICKNES)
+        right_spec = DrawingSpec(color=self.POSE_CONN_RIGHT_COLOR, thickness=self.POSE_CONN_THICKNES)
+        default_spec = DrawingSpec(color=self.POSE_CONN_DEFAULT_COLOR, thickness=self.POSE_CONN_THICKNES)
+
+        for conn in self._mp_solution_pose.POSE_CONNECTIONS:
+            if (conn[0] in _POSE_LANDMARKS_LEFT or conn[0] == PoseLandmark.NOSE) and conn[1] in _POSE_LANDMARKS_LEFT:
+                pose_conn_style[conn] = left_spec
+            elif (conn[0] in _POSE_LANDMARKS_RIGHT or conn[0] == PoseLandmark.NOSE) and \
+                    conn[1] in _POSE_LANDMARKS_RIGHT:
+                pose_conn_style[conn] = right_spec
+            else:
+                pose_conn_style[conn] = default_spec
+
+        return pose_conn_style
+
+    def get_plot_pose_connections_style(self):
+        """Returns a pose connections drawing style.
+
+        Returns:
+            A mapping from each pose connection to its default drawing spec.
+        """
+        pose_conn_style = {}
+        left_spec = DrawingSpec(color=self.PLOT_CONN_LEFT_COLOR, thickness=self.PLOT_LINE_THICKNESS)
+        right_spec = DrawingSpec(color=self.PLOT_CONN_RIGHT_COLOR, thickness=self.PLOT_LINE_THICKNESS)
+        default_spec = DrawingSpec(color=self.PLOT_COLOR_DEFAULT, thickness=self.PLOT_LINE_THICKNESS)
+
+        for conn in self._mp_solution_pose.POSE_CONNECTIONS:
+            if conn[0] in _POSE_LANDMARKS_LEFT and conn[1] in _POSE_LANDMARKS_LEFT:
+                pose_conn_style[conn] = left_spec
+            elif conn[0] in _POSE_LANDMARKS_RIGHT and conn[1] in _POSE_LANDMARKS_RIGHT:
+                pose_conn_style[conn] = right_spec
+            else:
+                pose_conn_style[conn] = default_spec
+
+        return pose_conn_style
+
+    def get_graph_3d_environment(self):
         """
         Draws landmarks and connections with matplotlib in a new image.
 
@@ -399,15 +461,15 @@ class PoseInterpreter:
         ax.set_xlim([-1, 2])
         ax.set_ylim([3, -2])
         ax.set_zlim([3, -2])
-        ax.view_init(elev=5, azim=self._plt_azim, vertical_axis="y")
-        if animated_azimuth:
-            self._plt_azim += 3
-            self._plt_azim = self._plt_azim % 360
+        ax.view_init(elev=self._plt_elev, azim=self._plt_azim, vertical_axis="y")
+        if self.PLOT_ANIMATED_AZIMUTH:
+            self._plt_azim += self.PLOT_ANIMATED_STEP
+            self._plt_azim = self._plt_azim % self.PLOT_ANIMATED_MAX_DEGREE
         ax.axes.get_xaxis().set_ticklabels([])
         ax.axes.get_yaxis().set_ticklabels([])
         ax.axes.get_zaxis().set_ticklabels([])
 
-        if self.detected_pose.pose_landmarks:  # If MediaPipe detect a body pose
+        if self.detected_pose.pose_world_landmarks:  # If MediaPipe detect a body pose
 
             # Zoom in/out axis
             top = self.computed_pose["pose_landmarks"][PoseLandmark.RIGHT_EYE]
@@ -421,24 +483,37 @@ class PoseInterpreter:
 
             landmarks = self.computed_pose["pose_landmarks"]
             num_landmarks = len(landmarks)
+            connection_drawing_spec = self.get_plot_pose_connections_style()
+
             # Draw the connections
             for connection in self._mp_connections:
                 start = connection[0]
                 end = connection[1]
+                drawing_spec = connection_drawing_spec[connection] if isinstance(
+                    connection_drawing_spec, Mapping) else connection_drawing_spec
 
                 if not (0 <= start < num_landmarks and 0 <= end < num_landmarks):
                     continue
+
                 ax.plot3D(
                     xs=[landmarks[start].x, landmarks[end].x],
                     ys=[landmarks[start].y, landmarks[end].y],
                     zs=[landmarks[start].z, landmarks[end].z],
-                    color=_normalize_color(self.PLOT_COLOR),
-                    linewidth=self.PLOT_THICKNESS)
+                    color=_normalize_color(drawing_spec.color),
+                    linewidth=drawing_spec.thickness)
 
             # Draw calculated angles
             for landmark in landmarks:
                 if landmark.angle is not None:
                     ax.text(landmark.x, landmark.y, landmark.z, str(int(landmark.angle)), fontsize=9)
+
+                # Draw the points
+                ax.scatter3D(
+                    xs=[landmark.x],
+                    ys=[landmark.y],
+                    zs=[landmark.z],
+                    color=_normalize_color(self.PLOT_POINT_COLOR[::-1]),
+                    linewidth=self.PLOT_POINT_THICKNESS)
 
         # Draw the render
         self._plt_fig.canvas.draw()
@@ -446,5 +521,31 @@ class PoseInterpreter:
         # Plot canvas to a three channel RGB image represented as numpy ndarray
         image = np.fromstring(self._plt_fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
         image = image.reshape(self._plt_fig.canvas.get_width_height()[::-1] + (3,))
-        image = image[70:400, 150:520]
+        image = image[100:375, 150:520]
         return image
+
+    def draw_plot(self, image: np.ndarray, x_offset: int = 0, y_offset: int = 0, scale: float = 1.0):
+        """
+        Draws plot over the image.
+
+        Args:
+          image: A three channel RGB image represented as numpy ndarray.
+          x_offset: X offset of the plot
+          y_offset: Y offset of the plot
+          scale: scale of the plot
+        """
+
+        plot_img = self.get_graph_3d_environment()
+        plot_img = cv2.cvtColor(plot_img, cv2.COLOR_RGB2RGBA)  # Add alpha channel
+        plot_img[np.all(plot_img == (255, 255, 255, 255), axis=-1)] = (10, 10, 10, 32)  # Remove background
+        plot_img = cv2.resize(plot_img, (0, 0), fx=scale, fy=scale)  # Resize image
+
+        y1, y2 = y_offset, y_offset + plot_img.shape[0]
+        x1, x2 = x_offset, x_offset + plot_img.shape[1]
+
+        alpha_s = plot_img[:, :, 3] / 255.0
+        alpha_l = 1.0 - alpha_s
+
+        for c in range(0, 3):
+            image[y1:y2, x1:x2, c] = (alpha_s * plot_img[:, :, c] +
+                                      alpha_l * image[y1:y2, x1:x2, c])

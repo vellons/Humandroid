@@ -76,6 +76,8 @@ env\Scripts\activate # On Windows
 ```
 
 #### Install all requirements inside it
+If you have problems with the installation of the requirements, try installing the last version of mediapipe.
+For Apple Silicon there is a precompiled version of mediapipe called "mediapipe-silicon".
 ```
 pip install -r requirements.txt
 ```
@@ -85,5 +87,19 @@ pip install -r requirements.txt
 
 #### Run
 ```shell
-python3 main.py
+python3 mediapipe_example.py  # To checks if MediaPipe and camera are working
+python3 main.py  # To see all your poses angle
+python3 simplepybotsdk.py  # If you have a robot with SimplePYBotSDK and you want to remote control with sockets
+```
+
+#### Edits of MediaPipe
+I've made some changes to the MediaPipe library to make it work better.
+```python
+# In file venv/lib/python3.9/site-packages/mediapipe/python/solutions/drawing_utils.py -> method draw_landmarks
+
+# Added condition to hide the landmarks in some cases
+if drawing_spec.circle_radius > 0 and drawing_spec.thickness > 0:
+
+# In the same method I've chenged the radius of the circles
+int(drawing_spec.circle_radius * 1.8),  # Changed  to 1.8
 ```

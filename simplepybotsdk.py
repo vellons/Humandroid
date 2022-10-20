@@ -18,10 +18,10 @@ if __name__ == "__main__":
     poseInterpreter = PoseInterpreterSimplePyBotSDK(
         config_path="configurations/simple_humandroid.json",
         host=WEBSOCKET_HOST,
-        upper_body_only=False,
-        face_connections=True,
+        display_face_connections=True,
         calc_z=False
     )
+    poseInterpreter.PLOT_ANIMATED_AZIMUTH = True
 
     while camera.isOpened():
         success, image = camera.read()  # Get image
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
         image = cv2.flip(image, 1)  # Flip image for selfie-view
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR image to RGB
-        image.flags.writeable = False  # To improve performance
+        image.flags.writeable = False  # To improve performance, pass by reference
 
         # PoseInterpreter
         poseInterpreter.process_pose_landmark(image)
@@ -51,10 +51,12 @@ if __name__ == "__main__":
 
         # Build output
         image.flags.writeable = True
+        poseInterpreter.draw_plot(image, x_offset=0, y_offset=668, scale=1.5)  # This will downgrade fps
+
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # RGB image to BGR
-        cv2.putText(image, fps, (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-        cv2.namedWindow("Humandroid body pose V1.0", cv2.WINDOW_NORMAL)
-        cv2.imshow("Humandroid body pose V1.0", image)
+        cv2.putText(image, fps, (15, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
+        cv2.namedWindow("Elettra Robotics Lab", cv2.WINDOW_NORMAL)
+        cv2.imshow("Elettra Robotics Lab", image)
 
         if cv2.waitKey(5) & 0xFF == 27:
             break

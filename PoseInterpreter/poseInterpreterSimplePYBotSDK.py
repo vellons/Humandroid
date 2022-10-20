@@ -8,9 +8,10 @@ from PoseInterpreter.poseInterpreter import PoseInterpreter
 
 class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
 
-    def __init__(self, config_path: str, host: str, static_image_mode: bool = False, upper_body_only: bool = False,
-                 face_connections: bool = True, calc_z: bool = False, ws_block_on_error: bool = False):
-        super().__init__(config_path, static_image_mode, upper_body_only, face_connections, calc_z)
+    def __init__(self, config_path: str, host: str, static_image_mode: bool = False,
+                 display_face_connections: bool = True, calc_z: bool = False,
+                 ws_block_on_error: bool = False):
+        super().__init__(config_path, static_image_mode, display_face_connections, calc_z)
 
         self._websocket_host = host
         self._websocket_simplepybotsdk_app = None
@@ -53,7 +54,12 @@ class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
         if self._enable_send:
             try:
                 payload = {
-                    'ptp': str(self.computed_ptp)
+                    'type': 'C2R',
+                    'data': {
+                        'area': 'motion',
+                        'action': 'ptp',
+                        'command': self.computed_ptp
+                    }
                 }
                 self._websocket_simplepybotsdk_ws.send(json.dumps(payload))
             except WebSocketConnectionClosedException as e:

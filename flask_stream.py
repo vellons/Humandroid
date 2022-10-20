@@ -1,9 +1,27 @@
 import cv2
 from flask import Flask, Response  # Not in requirements
 from waitress import serve  # Not in requirements
+from PoseInterpreter import poseInterpreterSimplePYBotSDK
 
 flask_app = Flask(__name__)
 flask_image = None
+
+ADMIN_PAGE = """
+<html>
+<head>
+<title>ADMIN MEDIAPIPE SEND</title>
+</head>
+<body>
+<div>
+<button onclick="location.href='/__on'" type="button">START SEND</button>
+<button onclick="location.href='/__off'" type="button">STOP SEND</button>
+</div>
+<div>
+<img src="/" width="100%">
+</div>
+</body>
+</html>
+"""
 
 
 def gen():
@@ -25,6 +43,23 @@ def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
     return Response(gen(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@flask_app.route('/__admin')
+def admin():
+    return ADMIN_PAGE
+
+
+@flask_app.route('/__on')
+def start_websocket():
+    poseInterpreterSimplePYBotSDK.enable_websocket_send = True
+    return ADMIN_PAGE
+
+
+@flask_app.route('/__off')
+def stop_websocket():
+    poseInterpreterSimplePYBotSDK.enable_websocket_send = False
+    return ADMIN_PAGE
 
 
 def run_flask():

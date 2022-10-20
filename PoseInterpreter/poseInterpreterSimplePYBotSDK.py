@@ -1,12 +1,17 @@
 import json
+import time
+
 import websocket
 from websocket import WebSocketConnectionClosedException
 import threading
 
 from PoseInterpreter.poseInterpreter import PoseInterpreter
 
+enable_websocket_send = True
+
 
 class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
+    MAX_SEND_PER_SECOND = 20
 
     def __init__(self, config_path: str, host: str, static_image_mode: bool = False,
                  display_face_connections: bool = True, calc_z: bool = False,
@@ -19,6 +24,7 @@ class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
         self._ws_block_on_error = ws_block_on_error
         self._enable_send = False
         self._run_websocket_handler()
+        self._last_send = 0
 
     def _run_websocket_handler(self):
         print("Websocket starting connection with: {}".format(self._websocket_host))
@@ -51,6 +57,12 @@ class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
         self._enable_send = True
 
     def send_ptp_with_websocket(self):
+        if not enable_websocket_send:
+            print("WEBSOCKET SEND DISABLED!!")
+            return
+        if (time.time() - self._last_send) < 1.0 / self.MAX_SEND_PER_SECOND:
+            return
+        self._last_send = time.time()
         if self._enable_send:
             try:
                 payload = {

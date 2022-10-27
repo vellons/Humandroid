@@ -69,7 +69,7 @@ class PoseInterpreter:
     PLOT_ANIMATED_STEP = 3
     PLOT_ANIMATED_MAX_DEGREE = 360
     PLOT_DEFAULT_ELEV = 5
-    PLOT_DEFAULT_AZIM = 1
+    PLOT_DEFAULT_AZIM = 5
 
     _plt_fig = None  # Used inside draw_3d_environment()
     _plt_elev = PLOT_DEFAULT_ELEV

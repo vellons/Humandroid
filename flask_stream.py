@@ -9,7 +9,7 @@ flask_image = None
 ADMIN_PAGE = """
 <html>
 <head>
-<title>ADMIN MEDIAPIPE SEND</title>
+<title>Elettra Robotics Lab</title>
 </head>
 <body>
 <div>

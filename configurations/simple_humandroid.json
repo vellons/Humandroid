@@ -37,7 +37,7 @@
     "l_shoulder_x": {
       "offset": 0.0,
       "orientation": "indirect",
-      "type": "z",
+      "type": "z-disabled",
       "points": [
         "LEFT_HIP",
         "LEFT_SHOULDER",
@@ -47,7 +47,7 @@
     "r_shoulder_x": {
       "offset": 0.0,
       "orientation": "indirect",
-      "type": "z",
+      "type": "z-disabled",
       "points": [
         "RIGHT_HIP",
         "RIGHT_SHOULDER",

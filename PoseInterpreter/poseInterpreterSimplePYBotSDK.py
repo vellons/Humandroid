@@ -7,7 +7,7 @@ import threading
 
 from PoseInterpreter.poseInterpreter import PoseInterpreter
 
-enable_websocket_send = True
+enable_websocket_send = False
 
 
 class PoseInterpreterSimplePyBotSDK(PoseInterpreter):

@@ -5,13 +5,14 @@ from PoseInterpreter.poseInterpreterSimplePYBotSDK import PoseInterpreterSimpleP
 import threading
 import flask_stream
 
+VIDEO_STREAM_IN = "http://192.168.1.128:8080/video"  # Set 0 for webcam
 WEBSOCKET_HOST = "ws://192.168.1.131:65432"
 
 if __name__ == "__main__":
 
-    camera = cv2.VideoCapture(0)
+    camera = cv2.VideoCapture(VIDEO_STREAM_IN)
     # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
+    # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
 
     start_time = time.time()
     frame_counter = 0
@@ -21,9 +22,9 @@ if __name__ == "__main__":
         config_path="configurations/simple_humandroid.json",
         host=WEBSOCKET_HOST,
         display_face_connections=False,
-        calc_z=False
+        calc_z=True
     )
-    poseInterpreter.PLOT_ANIMATED_AZIMUTH = False
+    poseInterpreter.PLOT_ANIMATED_AZIMUTH = True
 
     # Starting flask thread
     threading.Thread(target=flask_stream.run_flask, daemon=True, args=()).start()
@@ -33,7 +34,7 @@ if __name__ == "__main__":
         if not success:
             continue
 
-        image = cv2.flip(image, 1)  # Flip image for selfie-view
+        # image = cv2.flip(image, 1)  # Flip image for selfie-view
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR image to RGB
         image.flags.writeable = False  # To improve performance, pass by reference
 

@@ -5,8 +5,8 @@ from PoseInterpreter.poseInterpreterSimplePYBotSDK import PoseInterpreterSimpleP
 import threading
 import flask_stream
 
-VIDEO_STREAM_IN = "http://192.168.1.128:8080/video"  # Set 0 for webcam, else path to video file, else IP camera URL
-WEBSOCKET_HOST = "ws://192.168.1.131:65432"
+VIDEO_STREAM_IN = 0  # Set 0 for webcam, else path to video file, else IP camera URL
+WEBSOCKET_HOST = "ws://localhost:65432"
 
 if __name__ == "__main__":
 
@@ -63,6 +63,7 @@ if __name__ == "__main__":
 
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # RGB image to BGR
         cv2.putText(image, fps, (15, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
+        cv2.putText(image, str(poseInterpreter.matching_pose), (15, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
 
         flask_stream.flask_image = image  # Send image to flask_stream (I could have done it better, but I'm sleepy)
 

@@ -3,7 +3,7 @@ import cv2
 import time
 from PoseInterpreter.poseInterpreterSimplePYBotSDK import PoseInterpreterSimplePyBotSDK
 
-WEBSOCKET_HOST = "ws://192.168.1.131:65432"
+WEBSOCKET_HOST = "ws://localhost:65432"
 
 if __name__ == "__main__":
 

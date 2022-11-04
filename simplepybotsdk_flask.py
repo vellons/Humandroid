@@ -5,7 +5,7 @@ from PoseInterpreter.poseInterpreterSimplePYBotSDK import PoseInterpreterSimpleP
 import threading
 import flask_stream
 
-VIDEO_STREAM_IN = "http://192.168.1.128:8080/video"  # Set 0 for webcam
+VIDEO_STREAM_IN = "http://192.168.1.128:8080/video"  # Set 0 for webcam, else path to video file, else IP camera URL
 WEBSOCKET_HOST = "ws://192.168.1.131:65432"
 
 if __name__ == "__main__":
@@ -13,6 +13,8 @@ if __name__ == "__main__":
     camera = cv2.VideoCapture(VIDEO_STREAM_IN)
     # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     # camera.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
+    # fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+    # mp4_out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (1280, 720))
 
     start_time = time.time()
     frame_counter = 0
@@ -44,7 +46,6 @@ if __name__ == "__main__":
         poseInterpreter.process_angles()
         poseInterpreter.draw_angles(image)
         poseInterpreter.send_ptp_with_websocket()
-        print(poseInterpreter.computed_ptp)
         # print(poseInterpreter.computed_pose)
         # print(poseInterpreter.computed_pose["pose_landmarks"][13].angle)  # Print left elbow angle
 
@@ -66,6 +67,7 @@ if __name__ == "__main__":
 
         # cv2.namedWindow("Elettra Robotics Lab", cv2.WINDOW_NORMAL)
         # cv2.imshow("Elettra Robotics Lab", image)
+        # mp4_out.write(image)
 
         if cv2.waitKey(5) & 0xFF == 27:
             break

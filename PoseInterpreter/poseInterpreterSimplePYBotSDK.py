@@ -8,6 +8,7 @@ import threading
 from PoseInterpreter.poseInterpreter import PoseInterpreter
 
 enable_websocket_send = False
+allowed_joints = ['head_z']
 
 
 class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
@@ -51,26 +52,31 @@ class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
         self._websocket_simplepybotsdk_app = None
 
     def _websocket_on_message(self, ws, message):
-        print("Websocket message: {}".format(message))
+        print("Websocket message received: {}".format(message))
         ws.send('{"socket": {"format": "block"}}')
         self._websocket_simplepybotsdk_ws = ws
         self._enable_send = True
 
     def send_ptp_with_websocket(self):
         if not enable_websocket_send:
-            print("WEBSOCKET SEND DISABLED!!")
+            print("{} WEBSOCKET SEND DISABLED!!".format(self.computed_ptp))
             return
         if (time.time() - self._last_send) < 1.0 / self.MAX_SEND_PER_SECOND:
             return
         self._last_send = time.time()
         if self._enable_send:
+            to_send = {}
+            for key, value in self.computed_ptp.items():
+                if key in allowed_joints:
+                    to_send[key] = value
+            print("to_send={} -- computed_ptp={}".format(to_send, self.computed_ptp))
             try:
                 payload = {
                     'type': 'C2R',
                     'data': {
                         'area': 'motion',
                         'action': 'ptp',
-                        'command': self.computed_ptp
+                        'command': {'seconds': 0.01, **to_send}
                     }
                 }
                 self._websocket_simplepybotsdk_ws.send(json.dumps(payload))

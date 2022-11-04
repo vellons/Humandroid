@@ -73,6 +73,26 @@
         "RIGHT_ELBOW",
         "RIGHT_WRIST"
       ]
+    },
+    "l_leg": {
+      "offset": -180.0,
+      "orientation": "direct",
+      "type": "z",
+      "points": [
+        "LEFT_HIP",
+        "LEFT_KNEE",
+        "LEFT_ANKLE"
+      ]
+    },
+    "r_leg": {
+      "offset": -180.0,
+      "orientation": "direct",
+      "type": "z",
+      "points": [
+        "RIGHT_HIP",
+        "RIGHT_KNEE",
+        "RIGHT_ANKLE"
+      ]
     }
   }
 }

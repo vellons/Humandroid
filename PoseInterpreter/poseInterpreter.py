@@ -310,7 +310,9 @@ class PoseInterpreter:
         """
         Method that check if all joint are in the correct position and not break the servomotors.
         """
+        pass
 
+        """
         # Crossing arms (left)
         if self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_ELBOW].angle is not None:
             left_elbow = self.computed_pose["pose_landmarks"][PoseLandmark.LEFT_ELBOW]

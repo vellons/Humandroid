@@ -9,6 +9,7 @@ from PoseInterpreter.poseInterpreter import PoseInterpreter
 
 enable_websocket_send = False
 allowed_joints = ['head_z']
+ALL_ALLOWED_JOINTS = ['head_z', 'l_shoulder_y', 'r_shoulder_y', 'l_elbow_y', 'r_elbow_y']
 
 
 class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
@@ -59,17 +60,22 @@ class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
 
     def send_ptp_with_websocket(self):
         if not enable_websocket_send:
-            print("{} WEBSOCKET SEND DISABLED!!".format(self.computed_ptp))
+            print("{} matching_pose={} WEBSOCKET SEND DISABLED!!".format(self.computed_ptp, self.matching_pose))
             return
         if (time.time() - self._last_send) < 1.0 / self.MAX_SEND_PER_SECOND:
             return
+        if "eyes_see_you_left" in self.matching_pose and "eyes_see_you_right" in self.matching_pose:
+            if self.matching_pose["eyes_see_you_left"] >= 0.8 or self.matching_pose["eyes_see_you_right"] >= 0.8:
+                global allowed_joints
+                allowed_joints = ALL_ALLOWED_JOINTS
+
         self._last_send = time.time()
         if self._enable_send:
             to_send = {}
             for key, value in self.computed_ptp.items():
                 if key in allowed_joints:
                     to_send[key] = value
-            print("to_send={} -- computed_ptp={}".format(to_send, self.computed_ptp))
+            print("to_send={} -- computed_ptp={} matching_pose={}".format(to_send, self.computed_ptp, self.matching_pose))
             try:
                 payload = {
                     'type': 'C2R',

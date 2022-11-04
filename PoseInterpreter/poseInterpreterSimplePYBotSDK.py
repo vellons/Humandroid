@@ -73,10 +73,18 @@ class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
                 self.last_eyes_see_you = time.time()
                 self.allowed_joints = self.ALL_ALLOWED_JOINTS
                 print("EYES SEE YOU")
+                try:
+                    self._websocket_simplepybotsdk_ws.send(json.dumps({'event': 'mediapipe_full_start'}))
+                except WebSocketConnectionClosedException as e:
+                    print("Websocket send error: {}".format(e))
             elif self.last_eyes_see_you != 0 and (time.time() - self.last_eyes_see_you) > 60:
                 self.last_eyes_see_you = 0
                 self.allowed_joints = self.BASE_JOINTS
                 print("EYES SEE YOU STOP - Disabled all joints")
+                try:
+                    self._websocket_simplepybotsdk_ws.send(json.dumps({'event': 'mediapipe_full_stop'}))
+                except WebSocketConnectionClosedException as e:
+                    print("Websocket send error: {}".format(e))
 
         self._last_send = time.time()
         if self._enable_send:

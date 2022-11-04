@@ -32,6 +32,7 @@ class PoseInterpreter:
     detected_pose = None  # Data directly form MediaPipe
     computed_pose = None  # Computed data for humandroid robot with servo angles
     computed_ptp = {}  # Computed point to point pose (for humandroid robot motors)
+    matching_pose = {}  # Poses detected from angle calculation (in future with ML model)
 
     _FACE_LANDMARKS = frozenset([
         PoseLandmark.RIGHT_EYE_INNER, PoseLandmark.RIGHT_EYE,
@@ -97,6 +98,11 @@ class PoseInterpreter:
                 for key, j in self.configuration["joints"].items():
                     angle = (PoseLandmark[j["points"][0]], PoseLandmark[j["points"][1]], PoseLandmark[j["points"][2]])
                     j["pose_landmarks"] = angle
+                if "poses" in self.configuration:
+                    for key, pose in self.configuration["poses"].items():
+                        for check in pose:
+                            check["j1_landmark"] = PoseLandmark[check["j1"]]
+                            check["j2_landmark"] = PoseLandmark[check["j2"]]
         except Exception as e:
             raise Exception("Failed to load configuration. Impossible to calc angles. Error: {}".format(e))
 
@@ -336,6 +342,72 @@ class PoseInterpreter:
                 self.computed_ptp["r_shoulder_x"] = angle
             elif not self._calc_z:
                 self.computed_ptp["r_shoulder_x"] = 0
+        """
+
+    def _is_check_matching(self, check):
+        is_check_matching = True
+        landmarks = self.computed_pose["pose_landmarks"]
+        l1 = landmarks[check["j1_landmark"]]
+        l2 = landmarks[check["j2_landmark"]]
+
+        # print("{} x={} y={} z={}".format(check["j1"], l1.x, l1.y, l1.z))
+        # print("{} x={} y={} z={}".format(check["j2"], l2.x, l2.y, l2.z))
+
+        if check["comparator_x"] == "gte":
+            if not (l1.x >= l2.x):
+                is_check_matching = False
+        elif check["comparator_x"] == "lte":
+            if not (l1.x <= l2.x):
+                is_check_matching = False
+        elif check["comparator_x"] is not None:
+            raise KeyError("check for comparator_x {} not supported".format(check["comparator_x"]))
+
+        if check["comparator_y"] == "gte":
+            if not (l1.y >= l2.y):
+                is_check_matching = False
+        elif check["comparator_y"] == "lte":
+            if not (l1.y <= l2.y):
+                is_check_matching = False
+        elif check["comparator_y"] is not None:
+            raise KeyError("check for comparator_y {} not supported".format(check["comparator_y"]))
+
+        if check["comparator_z"] == "gte":
+            if not (l1.z >= l2.z):
+                is_check_matching = False
+        elif check["comparator_z"] == "lte":
+            if not (l1.z <= l2.z):
+                is_check_matching = False
+        elif check["comparator_z"] is not None:
+            raise KeyError("check for comparator_z {} not supported".format(check["comparator_z"]))
+
+        return is_check_matching
+
+    def process_matching_pose(self):
+        """
+        Check if a pose is matching with the poses defined in the configuration file.
+        """
+        if "poses" not in self.configuration:
+            return
+        landmarks = self.computed_pose["pose_landmarks"]
+        for key, poses in self.configuration["poses"].items():
+            self.matching_pose[key] = 0
+            not_visible = 0
+            for check in poses:  # Check if joints are visible
+                for p in [check["j1_landmark"], check["j2_landmark"]]:
+                    # if landmarks[p].visibility < _VISIBILITY_THRESHOLD or landmarks[p].presence < PRESENCE_THRESHOLD:
+                    if landmarks[p].visibility < _VISIBILITY_THRESHOLD:
+                        not_visible += 1
+
+            if not_visible > 0:
+                continue
+
+            is_this_pose = True
+            for check in poses:
+                if not self._is_check_matching(check):
+                    is_this_pose = False
+
+            if is_this_pose:
+                self.matching_pose[key] = 1.0  # Let's say that the confidence is 1...
 
     def draw_angles(self, image: np.ndarray):
         """

@@ -94,5 +94,53 @@
         "RIGHT_ANKLE"
       ]
     }
+  },
+  "poses": {
+    "eyes_see_you_right": [
+      {
+        "j1": "RIGHT_INDEX",
+        "j2": "RIGHT_SHOULDER",
+        "comparator_x": "gte",
+        "comparator_y": "lte",
+        "comparator_z": null
+      },
+      {
+        "j1": "RIGHT_INDEX",
+        "j2": "LEFT_SHOULDER",
+        "comparator_x": "lte",
+        "comparator_y": "lte",
+        "comparator_z": null
+      },
+      {
+        "j1": "RIGHT_WRIST",
+        "j2": "NOSE",
+        "comparator_x": null,
+        "comparator_y": "gte",
+        "comparator_z": null
+      }
+    ],
+    "eyes_see_you_left": [
+      {
+        "j1": "LEFT_INDEX",
+        "j2": "LEFT_SHOULDER",
+        "comparator_x": "lte",
+        "comparator_y": "lte",
+        "comparator_z": null
+      },
+      {
+        "j1": "LEFT_INDEX",
+        "j2": "RIGHT_SHOULDER",
+        "comparator_x": "gte",
+        "comparator_y": "lte",
+        "comparator_z": null
+      },
+      {
+        "j1": "LEFT_WRIST",
+        "j2": "NOSE",
+        "comparator_x": null,
+        "comparator_y": "gte",
+        "comparator_z": null
+      }
+    ]
   }
 }

@@ -44,6 +44,7 @@ if __name__ == "__main__":
         poseInterpreter.process_pose_landmark(image)
         poseInterpreter.draw_landmarks(image)
         poseInterpreter.process_angles()
+        poseInterpreter.process_matching_pose()
         poseInterpreter.draw_angles(image)
         poseInterpreter.send_ptp_with_websocket()
         # print(poseInterpreter.computed_pose)

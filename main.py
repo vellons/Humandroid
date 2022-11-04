@@ -32,8 +32,9 @@ if __name__ == "__main__":
         poseInterpreter.process_pose_landmark(image)
         poseInterpreter.draw_landmarks(image)
         poseInterpreter.process_angles()
+        poseInterpreter.process_matching_pose()
         poseInterpreter.draw_angles(image)
-        print(poseInterpreter.computed_ptp)
+        print("{} matching_pose={}".format(poseInterpreter.computed_ptp, poseInterpreter.matching_pose))
         # print(poseInterpreter.computed_pose)
         # print(poseInterpreter.computed_pose["pose_landmarks"][13].angle)  # Print left elbow angle
 

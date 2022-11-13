@@ -12,7 +12,7 @@ enable_websocket_send = False
 
 class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
     MAX_SEND_PER_SECOND = 15
-    MAX_ALL_JOINTS_TIME = 60  # In seconds
+    MAX_ALL_JOINTS_TIME = 45  # In seconds
     BASE_JOINTS = ['head_z']
     ALL_ALLOWED_JOINTS = ['head_z', 'l_shoulder_y', 'r_shoulder_y', 'l_elbow_y', 'r_elbow_y']
     allowed_joints = BASE_JOINTS

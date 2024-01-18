@@ -62,8 +62,9 @@ if __name__ == "__main__":
         # poseInterpreter.draw_plot(image, x_offset=0, y_offset=668, scale=1.5)  # This will downgrade fps
 
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # RGB image to BGR
-        cv2.putText(image, fps, (15, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
-        cv2.putText(image, str(poseInterpreter.matching_pose), (15, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
+        # cv2.putText(image, fps, (15, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
+        # cv2.putText(image, str(poseInterpreter.matching_pose), (15, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 4)
+        cv2.putText(image, "Elettra Robotics Lab", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
         flask_stream.flask_image = image  # Send image to flask_stream (I could have done it better, but I'm sleepy)
 

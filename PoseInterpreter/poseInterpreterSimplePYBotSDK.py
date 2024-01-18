@@ -12,6 +12,7 @@ enable_websocket_send = False
 
 class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
     MAX_SEND_PER_SECOND = 15
+    MAX_ALL_JOINTS_TIME = 45  # In seconds
     BASE_JOINTS = ['head_z']
     ALL_ALLOWED_JOINTS = ['head_z', 'l_shoulder_y', 'r_shoulder_y', 'l_elbow_y', 'r_elbow_y']
     allowed_joints = BASE_JOINTS
@@ -62,8 +63,14 @@ class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
 
     def send_ptp_with_websocket(self):
         if not enable_websocket_send:
-            self.allowed_joints = self.BASE_JOINTS
             print("{} matching_pose={} WEBSOCKET SEND DISABLED!!".format(self.computed_ptp, self.matching_pose))
+            if self.last_eyes_see_you != 0:
+                self.last_eyes_see_you = 0
+                self.allowed_joints = self.BASE_JOINTS
+                try:
+                    self._websocket_simplepybotsdk_ws.send(json.dumps({'event': 'mediapipe_stop'}))
+                except WebSocketConnectionClosedException as e:
+                    print("Websocket send message error: {}".format(e))
             return
         if (time.time() - self._last_send) < 1.0 / self.MAX_SEND_PER_SECOND:
             return
@@ -73,10 +80,18 @@ class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
                 self.last_eyes_see_you = time.time()
                 self.allowed_joints = self.ALL_ALLOWED_JOINTS
                 print("EYES SEE YOU")
-            elif self.last_eyes_see_you != 0 and (time.time() - self.last_eyes_see_you) > 60:
+                try:
+                    self._websocket_simplepybotsdk_ws.send(json.dumps({'event': 'mediapipe_full_start'}))
+                except WebSocketConnectionClosedException as e:
+                    print("Websocket send message error: {}".format(e))
+            elif self.last_eyes_see_you != 0 and (time.time() - self.last_eyes_see_you) > self.MAX_ALL_JOINTS_TIME:
                 self.last_eyes_see_you = 0
                 self.allowed_joints = self.BASE_JOINTS
                 print("EYES SEE YOU STOP - Disabled all joints")
+                try:
+                    self._websocket_simplepybotsdk_ws.send(json.dumps({'event': 'mediapipe_full_stop'}))
+                except WebSocketConnectionClosedException as e:
+                    print("Websocket send message error: {}".format(e))
 
         self._last_send = time.time()
         if self._enable_send:
@@ -84,7 +99,7 @@ class PoseInterpreterSimplePyBotSDK(PoseInterpreter):
             for key, value in self.computed_ptp.items():
                 if key in self.allowed_joints:
                     to_send[key] = value
-            print("to_send={} -- computed_ptp={} matching_pose={}".format(to_send, self.computed_ptp, self.matching_pose))
+            print("to_send={} -- computed_ptp={} match_pose={}".format(to_send, self.computed_ptp, self.matching_pose))
             try:
                 payload = {
                     'type': 'C2R',

@@ -1,11 +1,11 @@
 {
-  "id": "simple_humandroid",
+  "id": "uranus_sdk_mediapipe",
   "version": "1.0",
-  "name": "SimplePyBotSDKExample",
+  "name": "Uranus SDK mediapipe",
   "joints": {
     "head_z": {
-      "offset": -50.0,
-      "orientation": "direct",
+      "offset": -300,
+      "orientation": "indirect",
       "type": "math",
       "math_angle": "head_z",
       "points": [
@@ -15,7 +15,7 @@
       ]
     },
     "l_shoulder_y": {
-      "offset": 0.0,
+      "offset": -90.0,
       "orientation": "direct",
       "type": "xy",
       "points": [
@@ -25,7 +25,7 @@
       ]
     },
     "r_shoulder_y": {
-      "offset": 0.0,
+      "offset": -90.0,
       "orientation": "indirect",
       "type": "xy",
       "points": [

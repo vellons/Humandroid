@@ -2,11 +2,22 @@
 
 The goal of this project is to have a REAL humanoid robot imitate the movements of a human.
 
-The example below shows a humandroid [robot](https://www.elettraroboticslab.it/progetti/Galvan) following me in real time, controlled by my computer with MediaPipe.
+[![Watch the video](media/uranus_play_video.png)](https://drive.google.com/file/d/1Rdqxenmf1Ait8DBXzbfgadrenrWfKOQl/view)
 
+Here is a demonstration of the [SimplePYBotSDK](https://github.com/vellons/SimplePYBotSDK) in action, 
+utilized to command our robot, named [Uranus](https://www.elettraroboticslab.it/progetti/Uranus). 
+To implement this, I incorporated [MediaPipe](https://developers.google.com/mediapipe/solutions), 
+employing its human pose estimator to provide real-time output of 33 body landmarks for each frame in a video. 
+From these 33 landmarks, I extract the angles of the moving joints. 
+Subsequently, my custom library calculates the servo motor angles required for the new pose 
+and transmits them to the robot through a socket connection.
+
+
+The example below shows a [test robot](https://www.elettraroboticslab.it/progetti/Galvan) following me in real 
+time, controlled by my computer with MediaPipe.
 ![Atom test in real time](media/atom_real_test.gif)
 
-This program use [MediaPipe](https://mediapipe.dev) to detect the body pose.<br>
+This program use [MediaPipe](https://developers.google.com/mediapipe/solutions) to detect the body pose.<br>
 MediaPipe Pose is a ML solution for high-fidelity body pose, 
 inferring 33 2D landmarks on the whole body.
 The detector that MediaPipe uses is inspired by [BlazeFace](https://arxiv.org/abs/1907.05047).
@@ -15,7 +26,7 @@ The detector that MediaPipe uses is inspired by [BlazeFace](https://arxiv.org/ab
 
 ## How it works
 
-This program contains a Humandroid class, which takes care of all image processing operations, using MediaPipe.
+The code contains a Humandroid class, which takes care of all image processing operations, using MediaPipe.
 The Humandroid class contains various methods that perform operations/calculations on the image. 
 The results are always accessible from the main program and can be exported, in JSON format, 
 to communicate with other systems and control a humanoid robot.
@@ -41,15 +52,18 @@ JSON data representation example: (only 1 landmark)
 ```
 
 ## Core
-The core of this project is [SimplePYBotSDK](https://github.com/vellons/SimplePYBotSDK), a simple Python3 library to manage the states of servomotors and sensor in a robot, in a very simple way.
+The core of this project is [SimplePYBotSDK](https://github.com/vellons/SimplePYBotSDK), a simple Python3 library to
+manage the states of servomotors and sensor in a robot, in a very simple way.
 I've built this library to handle the status of robot’s motors.
 
 Every robot design is defined in a JSON file, in which all robot specifications are set. 
-In these files we can find: robot basic information, servomotors list (with angle limits, offset, orientation), sensors, motors type, and standard poses for the robot.
+In these files we can find: robot basic information, servomotors list (with angle limits, offset, orientation), 
+sensors, motors type, and standard poses for the robot.
 The core of SimplePYBotSDK allows you to move servomotor (changing the state) or group of servomotors simply with a method invocation. 
 The core handles the movements with the right speed (defined in the file configuration).
 
-The library was built to be completely independent from the robot hardware and extremely simple to use. Direct control of the motors can be managed externally to the library and can be different for each robot.
+The library was built to be completely independent from the robot hardware and extremely simple to use. 
+Direct control of the motors can be managed externally to the library and can be different for each robot.
 
 ### Socket layer
 To enable a low latency real time communication an external layer has been added to the library, to allow socket management. 
